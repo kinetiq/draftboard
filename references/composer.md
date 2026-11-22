@@ -102,7 +102,8 @@ This is the point of the run. Write `<run>/composer.json`:
 2. **Share the explorer.**
    - If you have an Artifact tool, publish `<run>/explorer.html` (first time: icon `map`). For later runs of the same volume, update the same artifact so the link stays. Then run `<script> link <url> --volume <key>` so briefs link to it, and rerun the build.
    - Otherwise tell the author to open `<run>/explorer.html` in a browser. Links like `explorer.html#ch-24` open a unit directly.
-3. Write `<run>/summary.md`: the headline, the convergence list, each framework's verdict and its high findings. Short.
+3. **Issue status.** The build applies the author's marks from earlier runs (`_status.json` in the briefs folder). If it reports findings that were marked fixed and are back (reopened), list them in `checks.md`; the explorer and briefs show them.
+4. Write `<run>/summary.md`: the headline, the convergence list, each framework's verdict and its high findings. Short.
 
 ## Step 7: Report
 

@@ -241,6 +241,17 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
 .row-main { display: grid; gap: 1px; min-width: 0; }
 .cnt { font: 600 13px var(--font-mono); min-width: 22px; text-align: center; color: var(--problem); }
 .chip.warn-chip { color: var(--warn); border-color: var(--warn); }
+.chip.s-fixed { color: var(--ok); border-color: var(--ok); }
+.chip.s-partly { color: var(--warn); border-color: var(--warn); }
+.chip.s-kept, .chip.s-stale { color: var(--muted); border-style: dashed; }
+.chip.s-reopened { color: var(--problem); border-color: var(--problem); }
+.row.closed, .tl-e.closed { opacity: .6; }
+.row .right { display: flex; gap: 6px; align-items: center; }
+.status-box { display: grid; gap: 6px; padding: 10px 12px; border-radius: var(--radius); border: 1px solid var(--line); }
+.status-box.s-fixed { border-color: var(--ok); }
+.status-box.s-partly { border-color: var(--warn); }
+.status-box.s-reopened { border-color: var(--problem); }
+.status-box p { margin: 0; font-size: 13px; }
 
 .focus-head { display: flex; justify-content: space-between; gap: 10px; align-items: start; }
 .focus-head h2 { font-size: 19px; line-height: 1.3; }
@@ -333,6 +344,10 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
   const FINDING = {};
   FW.forEach(f => f.findings.forEach(x => { x.fw = f.key; FINDING[x.id] = x; }));
   const CONV = Object.fromEntries((D.convergence || []).map((c, k) => [c.id, { ...c, rank: k + 1 }]));
+  // Issue status from the volume's status file: fixed, kept and stale are closed; partly and reopened stay open.
+  const CLOSED_ST = ["fixed", "kept", "stale"];
+  const isClosed = x => !!(x && x.state && CLOSED_ST.includes(x.state.status));
+  const N_CLOSED = Object.values(FINDING).filter(isClosed).length + (D.convergence || []).filter(isClosed).length;
   let SPINE = null;
   FW.forEach(f => f.series.forEach(s => { if (s.spine && !SPINE) SPINE = { s, fw: f }; }));
   const TENSION = SPINE;
@@ -402,7 +417,9 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
     agreeMin: 2,
     flowInfo: false,
     ref: true,
+    closed: false,
   };
+  const vis = x => state.closed || !isClosed(x);
   // #ch-24 opens a {{UNIT}} on All frameworks; #pacing-ch-24 opens it on a framework tab; #pacing opens a tab.
   function parseHash() {
     const h = decodeURIComponent(location.hash.slice(1));
@@ -434,6 +451,8 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
         <span>${CH.length} {{UNITS}}</span><span>${TOTAL.toLocaleString()} words</span>
         <span>${FW.length} frameworks</span><span>run ${esc(m.run || "")}</span>
         <span>git ${esc(m.git || "")}${m.dirty ? " (uncommitted changes)" : ""}</span>
+        ${N_CLOSED ? `<span>${N_CLOSED} closed</span>` : ""}
+        ${(D.confirmed || []).length ? `<span title="${esc(D.confirmed.map(e => e.id + " " + e.title).join("; "))}">${D.confirmed.length} earlier fixes confirmed by this run</span>` : ""}
       </div>
       ${m.sample ? '<div class="sample">Sample data. Findings here are placeholders, not an analysis of the {{WORK}}.</div>' : ""}
       ${D.headline ? `<p class="headline">${esc(D.headline)}</p>` : ""}
@@ -481,6 +500,9 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
       <button class="info" id="flow-info" aria-expanded="${state.flowInfo ? "true" : "false"}" title="What does this curve mean?">?</button>
       <div class="pop" id="flow-pop" ${state.flowInfo ? "" : "hidden"}>${flowInfoHTML()}</div>`;
   }
+  function closedToggle() {
+    return N_CLOSED ? `<label class="check"><input type="checkbox" id="closed-toggle" ${state.closed ? "checked" : ""}> Show closed (${N_CLOSED})</label>` : "";
+  }
   function renderControls() {
     renderAbout();
     if (state.view === "all") {
@@ -488,7 +510,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
       $("controls").innerHTML = `<span>Severity</span><span class="seg">
         <button data-sev="all" aria-pressed="${state.sev === "all"}">All</button>
         <button data-sev="high" aria-pressed="${state.sev === "high"}">High only</button></span>
-        ${flowControls()}`;
+        ${closedToggle()}${flowControls()}`;
       $("legend").innerHTML = `
         <span><i class="sw" style="background:var(${SPINE ? SPINE.fw.colorVar : "--muted"});opacity:.5"></i>${esc(SPINE ? SPINE.s.label : "")} (top curve)${overlayFor() ? ", dashed line = peak" : ""}</span>
         ${overlayFor() ? `<span><i class="sw" style="background:var(--ok);opacity:.25"></i>Reference band; amber and red ticks mark {{UNITS}} below or above it</span>` : ""}
@@ -499,7 +521,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
     } else {
       const f = FWK[state.view];
       $("stage-title").innerHTML = `<span class="dot" style="background:${col(f)};margin-right:8px"></span>${esc(f.name)}${f.lens ? ` <span class="muted" style="font-weight:500">· ${esc(f.lens)}</span>` : ""}`;
-      $("controls").innerHTML = flowControls();
+      $("controls").innerHTML = closedToggle() + flowControls();
       $("legend").innerHTML = `
         <span><svg width="12" height="12"><path d="M6 1 11 6 6 11 1 6Z" fill="${col(f)}"/></svg>On track</span>
         <span><svg width="12" height="12"><path d="M6 1 11 6 6 11 1 6Z" fill="var(--warn)"/></svg>Off or thin</span>
@@ -512,6 +534,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
   }
   $("controls").addEventListener("change", e => {
     if (e.target.id === "ref-toggle") { state.ref = e.target.checked; drawMap(); return; }
+    if (e.target.id === "closed-toggle") { state.closed = e.target.checked; drawMap(); renderStrip(); renderSide(true); renderFocus(); return; }
     if (e.target.id !== "flow-pick") return;
     setFlow(e.target.value); renderControls(); drawMap(); renderFocus();
   });
@@ -529,7 +552,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
   // ---------- map ----------
   const GUT = 150, PAD_R = 14;
   let G = null; // geometry of last draw
-  const sevOk = x => state.sev === "all" || x.severity === "high";
+  const sevOk = x => vis(x) && (state.sev === "all" || x.severity === "high");
   const visibleFW = () => FW.filter(f => !state.hidden.has(f.key));
 
   function pack(items) { // items: {a, b} {{UNIT}} index range; returns lane index per item
@@ -584,7 +607,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
         const h = Math.max(30, lanes * 18 + (marks.length ? 34 : 0) + 8);
         rows.push({ kind: "fwrow", f, r, spans, pack: p, marks, lanes, y, h }); y += h;
       });
-      const items = f.findings.map(x => {
+      const items = f.findings.filter(vis).map(x => {
         const ix = x.chapters.map(c => IDX[c]).filter(v => v != null);
         return { a: Math.min(...ix), b: Math.max(...ix), x, ix };
       }).filter(it => isFinite(it.a));
@@ -851,7 +874,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
     else if (sel && !state.hl.includes(state.stripCh)) state.stripCh = null;
   }
   function defaultSel() {
-    if (state.view === "all") { const c = (D.convergence || [])[0]; return c ? { t: "conv", id: c.id } : null; }
+    if (state.view === "all") { const c = (D.convergence || []).find(vis); return c ? { t: "conv", id: c.id } : null; }
     const f = FWK[state.view], x = f.findings.find(y => y.severity === "high") || f.findings[0];
     return x ? { t: "finding", id: x.id } : null;
   }
@@ -1134,12 +1157,21 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
   const stColor = (f, st) => st === "warn" ? "var(--warn)" : (st === "problem" || st === "missing") ? "var(--problem)" : col(f);
   const DIAMOND = (c, hollow) => `<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M5 .7 9.3 5 5 9.3.7 5Z" fill="${hollow ? "none" : c}" stroke="${c}" stroke-width="${hollow ? 1.3 : 0}" ${hollow ? 'stroke-dasharray="1.6 1.2"' : ""}/></svg>`;
   const sevChip = x => `<span class="chip ${esc(x.severity)}">${esc(x.severity)}</span>`;
+  const shortDate = d => { const mm = /^(\d{4})-(\d{2})-(\d{2})/.exec(d || ""); return mm ? new Date(+mm[1], +mm[2] - 1, +mm[3]).toLocaleDateString(undefined, { month: "short", day: "numeric" }) : ""; };
+  const stChip = x => x && x.state ? `<span class="chip s-${esc(x.state.status)}" title="${esc(x.state.note || "")}">${esc(x.state.status)}${x.state.date ? " " + esc(shortDate(x.state.date)) : ""}</span>` : (x && x.progress ? `<span class="chip">${esc(x.progress)}</span>` : "");
+  function statusBox(x) {
+    const st = x.state;
+    if (!st) return x.progress ? `<p class="hint">${esc(x.progress)}.</p>` : "";
+    const head = { fixed: "Marked fixed", partly: "Partly fixed", kept: "Kept as is", stale: "No longer applies", reopened: `Reopened: marked ${st.was || "fixed"} earlier, but this run still finds it` }[st.status] || st.status;
+    const ev = (st.evidence || []).map(e => `<blockquote><span>“${esc(e.quote)}”</span><span class="ref">${esc(chName(e.chapter))} L${esc(e.line)}</span></blockquote>`).join("");
+    return `<div class="status-box s-${esc(st.status)}"><div class="label">${esc(head)}${st.date ? " · " + esc(shortDate(st.date)) : ""}${st.derived ? " · all its findings are closed" : ""}</div>${st.note ? `<p>${esc(st.note)}</p>` : ""}${ev}</div>`;
+  }
   const idChip = x => `<span class="id" style="background:${col(FWK[x.fw])}">${esc(x.id)}</span>`;
   const fwDots = keys => `<span class="fw-dots">${keys.map(k => `<span class="dot" title="${esc(FWK[k].name)}" style="background:${col(FWK[k])}"></span>`).join("")}</span>`;
   function findingRow(x, showFw) {
     const on = state.sel && state.sel.t === "finding" && state.sel.id === x.id;
-    return `<button class="row${on ? " on" : ""}" data-sel-finding="${esc(x.id)}">${idChip(x)}
-      <span class="row-main"><span class="ttl">${esc(x.title)}</span><span class="sub"><span>${esc(ranges(x.chapters))}</span>${showFw ? `<span>${esc(FWK[x.fw].name)}</span>` : ""}</span></span>${sevChip(x)}</button>`;
+    return `<button class="row${on ? " on" : ""}${isClosed(x) ? " closed" : ""}" data-sel-finding="${esc(x.id)}">${idChip(x)}
+      <span class="row-main"><span class="ttl">${esc(x.title)}</span><span class="sub"><span>${esc(ranges(x.chapters))}</span>${showFw ? `<span>${esc(FWK[x.fw].name)}</span>` : ""}</span></span><span class="right">${stChip(x)}${sevChip(x)}</span></button>`;
   }
   function copy(btn) {
     const text = btn.dataset.copy;
@@ -1241,7 +1273,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
       const spine = TENSION && TENSION.s.values[id];
       const vs = FW.flatMap(f => f.series).find(s2 => s2.type === "bars" && s2.values[id] != null);
       const fws = state.view === "all" ? visibleFW() : [FWK[state.view]];
-      const fs = fws.flatMap(f => f.findings.filter(x => x.chapters.includes(id)));
+      const fs = fws.flatMap(f => f.findings.filter(x => vis(x) && x.chapters.includes(id)));
       chap = `<div class="strip-ch">
         <div class="strip-line"><span class="strip-name">${esc(chName(id))}${c.title === chName(id) ? "" : " · " + esc(c.title)}</span>
           <span class="strip-meta">${c.words.toLocaleString()} words · ${pct(c.p0)}–${pct(c.p1)}${c.pov ? " · POV " + esc(c.pov) : ""}${spine != null ? " · tension " + esc(spine) + (TPEAK && TPEAK.values[id] != null && TPEAK.values[id] !== spine ? ` (peak ${esc(TPEAK.values[id])})` : "") : ""}${vs ? ` · shift ${esc(fmtShift(vs.values[id]))}${zeroKind(id) === "cancel" ? " (ends where it started)" : zeroKind(id) === "none" ? " (nothing turned)" : ""}` : ""}</span>
@@ -1253,8 +1285,9 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
     } else chap = `<div class="strip-ch"><div class="strip-line"><span class="strip-name muted">No {{UNIT}} selected</span><span class="strip-meta">Click a {{UNIT}} on the map or in the timeline.</span></div></div>`;
     let v;
     if (state.view === "all") {
-      const all = FW.flatMap(f => f.findings), hi = all.filter(x => x.severity === "high").length;
-      v = `<div class="strip-v"><div class="kicker">All frameworks</div><p>${FW.length} frameworks · ${all.length} findings, ${hi} high · ${(D.convergence || []).length} places they agree</p></div>`;
+      const all = FW.flatMap(f => f.findings).filter(x => !isClosed(x)), hi = all.filter(x => x.severity === "high").length;
+      const nc = FW.flatMap(f => f.findings).filter(isClosed).length;
+      v = `<div class="strip-v"><div class="kicker">All frameworks</div><p>${FW.length} frameworks · ${all.length} open findings, ${hi} high${nc ? ` · ${nc} closed` : ""} · ${(D.convergence || []).filter(c => !isClosed(c)).length} places they agree</p></div>`;
     } else {
       const f = FWK[state.view], sv = shortVerdict(f);
       v = `<div class="strip-v"><div class="kicker">Verdict <span class="chip g-${esc(f.grade)}">${esc(f.grade || "")}</span></div><p>${esc(sv)}</p>${f.verdict && f.verdict !== sv ? `<details class="more"><summary>Full verdict</summary><p>${esc(f.verdict)}</p></details>` : ""}</div>`;
@@ -1338,8 +1371,9 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
     const others = FW.filter(o => o.key !== x.fw).flatMap(o => o.findings.filter(y => y.chapters.some(c => x.chapters.includes(c))));
     return `<div class="focus-head"><div><div class="kicker"><span class="dot" style="background:${col(f)}"></span>${esc(f.name)} finding</div>
         <h2>${idChip(x)} ${esc(x.title)}</h2></div>${X_BTN}</div>
-      <div class="meta"><span>${esc(ranges(x.chapters))}</span>${x.fix_in && x.fix_in.length ? `<span class="fixin">Fix in ${esc(ranges(x.fix_in))}</span>` : ""}${sevChip(x)}${state.view !== x.fw ? `<button class="linkish" data-go="${esc(x.fw)}">Open the ${esc(f.name)} tab</button>` : ""}</div>
+      <div class="meta"><span>${esc(ranges(x.chapters))}</span>${x.fix_in && x.fix_in.length ? `<span class="fixin">Fix in ${esc(ranges(x.fix_in))}</span>` : ""}${sevChip(x)}${stChip(x)}${state.view !== x.fw ? `<button class="linkish" data-go="${esc(x.fw)}">Open the ${esc(f.name)} tab</button>` : ""}</div>
       ${miniMap(x.chapters, { fw: f })}
+      ${statusBox(x)}
       <p class="lede sm">${esc(x.problem)}</p>
       ${convs.length || others.length ? `<div class="also">
         ${convs.map(c => `<button class="row" data-sel-conv="${esc(c.id)}"><span class="rank">${CONV[c.id].rank}</span><span class="row-main"><span class="ttl">${esc(c.title)}</span><span class="sub">Where they agree</span></span>${fwDots([...new Set((c.findings || []).map(id => FINDING[id]?.fw).filter(Boolean))])}</button>`).join("")}
@@ -1357,8 +1391,9 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
     const fs = (c.findings || []).map(id => FINDING[id]).filter(Boolean);
     const keys = [...new Set(fs.map(x => x.fw))];
     return `<div class="focus-head"><div><div class="kicker">Where they agree · #${c.rank}</div><h2>${esc(c.title)}</h2></div>${X_BTN}</div>
-      <div class="meta"><span>${esc(ranges(c.chapters || []))}</span>${c.fix_in && c.fix_in.length ? `<span class="fixin">Fix in ${esc(ranges(c.fix_in))}</span>` : ""}<span>${keys.length} frameworks</span>${fwDots(keys)}</div>
+      <div class="meta"><span>${esc(ranges(c.chapters || []))}</span>${c.fix_in && c.fix_in.length ? `<span class="fixin">Fix in ${esc(ranges(c.fix_in))}</span>` : ""}<span>${keys.length} frameworks</span>${fwDots(keys)}${stChip(c)}</div>
       ${miniMap(c.chapters || [], { findings: fs })}
+      ${statusBox(c)}
       <p class="lede sm">${esc(c.read)}</p>
       ${c.fix ? `<div><div class="label">Fix</div><p class="sugg">${esc(c.fix)}</p></div>` : ""}
       <div><div class="label">Findings behind it</div><div class="rows">${fs.map(x => findingRow(x, true)).join("")}</div></div>`;
@@ -1401,7 +1436,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
   function timelineHTML(f) {
     const ev = {};
     const add = (ch, e) => { if (IDX[ch] == null) return; (ev[ch] = ev[ch] || []).push(e); };
-    f.findings.forEach(x => { const first = x.chapters.map(c => IDX[c]).filter(v => v != null).sort((a, b) => a - b)[0]; if (first != null) add(CH[first].id, { k: "finding", x, o: 0 }); });
+    f.findings.filter(vis).forEach(x => { const first = x.chapters.map(c => IDX[c]).filter(v => v != null).sort((a, b) => a - b)[0]; if (first != null) add(CH[first].id, { k: "finding", x, o: 0 }); });
     f.marks.forEach(mk => { if (!state.minor && isMinor(f, mk)) return; add(mk.chapter, { k: "mark", mk, o: 1 }); });
     f.spans.forEach(s => { add(s.from, { k: "open", s, o: 2 }); if (s.to != null && s.to !== s.from) add(s.to, { k: "close", s, o: 3 }); });
     const actAt = {}; (D.acts || []).forEach(a => { actAt[a.from] = a; });
@@ -1421,7 +1456,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
   function tlEntry(f, e) {
     if (e.k === "finding") {
       const x = e.x, on = state.sel && state.sel.t === "finding" && state.sel.id === x.id;
-      return `<button class="tl-e tl-f${on ? " on" : ""}" data-sel-finding="${esc(x.id)}">${idChip(x)}<span class="tl-t"><span>${esc(x.title)}</span><span class="sub">${esc(ranges(x.chapters))}</span></span>${sevChip(x)}</button>`;
+      return `<button class="tl-e tl-f${on ? " on" : ""}${isClosed(x) ? " closed" : ""}" data-sel-finding="${esc(x.id)}">${idChip(x)}<span class="tl-t"><span>${esc(x.title)}</span><span class="sub">${esc(ranges(x.chapters))}</span></span><span class="right">${stChip(x)}${sevChip(x)}</span></button>`;
     }
     if (e.k === "mark") {
       const mk = e.mk, st = mk.status || "ok";
@@ -1434,19 +1469,21 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
   function priorityHTML(key, highOnly) {
     const order = { high: 0, medium: 1 };
     let list = key ? FWK[key].findings : FW.flatMap(f => f.findings).slice().sort((a, b) => order[a.severity] - order[b.severity] || FW.indexOf(FWK[a.fw]) - FW.indexOf(FWK[b.fw]));
+    list = list.filter(vis);
     if (highOnly) list = list.filter(x => x.severity === "high");
     if (highOnly && !list.length) return `<p class="empty">No high findings.</p>`;
     return list.length ? `<div class="rows">${list.map(x => findingRow(x, !key)).join("")}</div>` : `<p class="empty">No findings.</p>`;
   }
 
   function agreeHTML() {
-    const conv = D.convergence || [];
-    if (!conv.length) return `<p class="empty">The composer found no shared causes across frameworks.</p>`;
+    const all = D.convergence || [], conv = all.filter(vis);
+    if (!all.length) return `<p class="empty">The composer found no shared causes across frameworks.</p>`;
+    if (!conv.length) return `<p class="empty">All ${all.length} are closed. Turn on Show closed to see them.</p>`;
     return `<p class="side-note">Findings from different frameworks that the composer traced to one cause. Ranked by how much a fix helps.</p>
       <div class="rows">${conv.map(c => {
         const keys = [...new Set((c.findings || []).map(id => FINDING[id]?.fw).filter(Boolean))];
         const on = state.sel && state.sel.t === "conv" && state.sel.id === c.id;
-        return `<button class="row${on ? " on" : ""}" data-sel-conv="${esc(c.id)}"><span class="rank">${CONV[c.id].rank}</span><span class="row-main"><span class="ttl">${esc(c.title)}</span><span class="sub"><span>${esc(ranges(c.chapters || []))}</span><span>${keys.length} frameworks</span></span></span>${fwDots(keys)}</button>`;
+        return `<button class="row${on ? " on" : ""}${isClosed(c) ? " closed" : ""}" data-sel-conv="${esc(c.id)}"><span class="rank">${CONV[c.id].rank}</span><span class="row-main"><span class="ttl">${esc(c.title)}</span><span class="sub"><span>${esc(ranges(c.chapters || []))}</span><span>${keys.length} frameworks</span></span></span><span class="right">${stChip(c)}${fwDots(keys)}</span></button>`;
       }).join("")}</div>`;
   }
 

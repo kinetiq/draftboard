@@ -82,6 +82,7 @@ def main() -> None:
         mine = [l.strip() for l in block.splitlines() if l.strip()]
     fixes = [l[4:] for l in section(text, "Fix here") if l.startswith("### ")]
     shows = [l[2:] for l in section(text, "Shows here") if l.startswith("- ")]
+    closed = [l[2:].split(" · ")[0].replace("**", "") for l in section(text, "Closed here") if l.startswith("- ")]
     tension = next((l for l in text.splitlines() if l.startswith("Tension **")), "").replace("**", "")
 
     changed = ""
@@ -105,6 +106,8 @@ def main() -> None:
     lines.append("Fix here: " + ("; ".join(fixes) if fixes else "nothing"))
     if shows:
         lines.append("Shows here, fix elsewhere: " + "; ".join(shows))
+    if closed:
+        lines.append("Closed here, do not raise again: " + "; ".join(closed))
     lines.append("Use the draftboard issues skill for how to use these. Mention the fix-here items briefly when relevant; never edit the manuscript because of them.")
 
     seen.add(key)

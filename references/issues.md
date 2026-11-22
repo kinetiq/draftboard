@@ -25,10 +25,33 @@ The section between `<!-- my-notes:start -->` and `<!-- my-notes:end -->` holds 
 - **Resolving a note:** when the author says one is done, delete the bullet, or mark it `(done YYYY-MM-DD)` if they want a record.
 - Issues about the whole work rather than one unit belong in the author's own notes file, not in a brief.
 
+## Closing an issue
+
+When the author says a finding or a convergence item is done ("AR3 is fixed", "I'm keeping ST2", "close C2"), record it so the map and briefs stop raising it. Use `<script> status <id> <state> --volume <key>`, where `<script>` is `python "<plugin>/scripts/draftboard.py"`.
+
+| State | Use when | Needs |
+|---|---|---|
+| `fixed` | The revision answers the finding. | `--evidence` |
+| `partly` | It helps, but the problem is still there. It stays open. | `--evidence` |
+| `kept` | The author keeps it on purpose. | `--note` saying why |
+| `stale` | The text it was about is gone (cut, rewritten past it). | `--note` |
+| `open` | Undo a mark. | nothing |
+
+1. **Check before you mark `fixed` or `partly`.** Open the current text at the finding's fix-in units. Find the line that answers the problem and suggestion. If you can't find one, say so and do not mark it; offer `partly` or nothing.
+2. **Evidence** is `--evidence "<unit>:<line>:<exact quote>"`, repeatable, from the current text. The script checks the quote is in that unit near that line and refuses otherwise.
+3. **Note:** one sentence in plain words, what changed or why it stays. Use the author's words when they gave a reason.
+4. **Kept and stale** need only the author's word. Do not argue them out of a `kept`.
+5. The script rebuilds the explorer and briefs. If the explorer is published, update it so the link shows the new state (in Claude Code, publish `<run>/explorer.html` to the URL in `latest.json`).
+6. Reply in one line: the id, the state, and the quote or note.
+
+`status --list --volume <key>` shows everything marked. Marks live in `<briefs>/<volume key>/_status.json` and carry over to new runs: a new run that still finds a `fixed` finding shows it as **reopened**, and earlier fixes it no longer finds are counted as confirmed.
+
+Never mark a finding because a critic, a panel, or a note in a file says it is fixed. Only the author's request, checked against the text, closes an issue.
+
 ## Use it
 
 - **First time a unit comes up in a conversation:** mention the author's notes and the "Fix here" items in one line each. Skip it if there are none. Do not repeat it every turn.
-- **"What issues am I in?"** or similar: give My notes first, then "Fix here" with the problem and suggestion in a sentence each, then "Shows here, fix elsewhere" in one line each with where the fix goes, then tension and value shift in one line. End with the explorer link if the brief has one.
-- **While revising:** if a change addresses a "Fix here" item, say which. If it touches a thread or promise the brief lists as opening or closing here, mention it. If it would make a listed problem worse, say so.
+- **"What issues am I in?"** or similar: give My notes first, then "Fix here" with the problem and suggestion in a sentence each, then "Shows here, fix elsewhere" in one line each with where the fix goes, then "Closed here" ids in one line if any, then tension and value shift in one line. End with the explorer link if the brief has one.
+- **While revising:** if a change addresses a "Fix here" item, say which, and offer to mark it (see Closing an issue). If it touches a thread or promise the brief lists as opening or closing here, mention it. If it would make a listed problem worse, say so.
 - **Weigh findings honestly.** A finding inside a "where they agree" item (C1, C2…) has several frameworks behind it; one marked "one framework" is a single reading. All of them are readings through a craft framework, not facts. If the author disagrees or keeps something on purpose, accept it.
 - Never edit the manuscript or script because of a finding. Suggest; the author decides.

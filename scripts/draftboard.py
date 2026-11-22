@@ -282,7 +282,7 @@ def merge(run: Path) -> dict:
                 c["scenes"] = [{k: s.get(k) for k in ("value", "shift", "goal", "turn", "line")}
                                for s in entry["scenes"]]
     book = chapters_data.get("book", "")
-    return {
+    analysis = {
         "meta": {
             "title": CFG["title"],
             "author": CFG.get("author", ""),
@@ -305,6 +305,8 @@ def merge(run: Path) -> dict:
         "frameworks": frameworks,
         "convergence": composer.get("convergence", []),
     }
+    apply_status(analysis)
+    return analysis
 
 
 def validate(analysis: dict) -> tuple[list[str], list[str]]:
@@ -434,6 +436,13 @@ def build(run: Path, analysis: dict) -> int:
         n = write_briefs(run, analysis)
         print(f"{n} {unit_noun()} briefs -> {briefs_dir() / analysis['meta']['book']}")
     findings = sum(len(f.get("findings", [])) for f in analysis["frameworks"])
+    states = [x.get("state", {}).get("status") for f in analysis["frameworks"] for x in f.get("findings", [])]
+    if any(states):
+        closed = sum(s in CLOSED for s in states)
+        reopened = [x["id"] for f in analysis["frameworks"] for x in f.get("findings", []) if x.get("state", {}).get("status") == "reopened"]
+        print(f"status: {closed} closed, {states.count('partly')} partly fixed"
+              + (f", reopened: {', '.join(reopened)}" if reopened else "")
+              + (f", {len(analysis.get('confirmed', []))} earlier fixes confirmed" if analysis.get("confirmed") else ""))
     print(f"{len(analysis['frameworks'])} frameworks, {findings} findings, "
           f"{len(analysis.get('convergence', []))} convergence items -> {run / 'explorer.html'}")
     return 0
@@ -497,6 +506,19 @@ def notes_block(notes: str) -> list[str]:
     return ["## My notes", "",
             f"Your own issues for this {unit_noun()}. Write between the two markers; everything between them survives rebuilds.", "",
             NOTES_START] + ([notes] if notes.strip() else []) + [NOTES_END, ""]
+
+
+def status_lines(x: dict) -> list[str]:
+    """Brief lines for an open item that has a status: partly fixed, or reopened by a new run."""
+    st = x.get("state") or {}
+    if st.get("status") == "partly":
+        ev = (st.get("evidence") or [{}])[0]
+        where = f" ({ch_name(ev['chapter'])} L{ev['line']})" if ev.get("line") else ""
+        return ["", f"**Status:** partly fixed {st.get('date', '')}{where}." + (f" {st['note']}" if st.get("note") else "")]
+    if st.get("status") == "reopened":
+        return ["", f"**Reopened:** marked {st.get('was')} on {st.get('date', '')} (run `{st.get('earlier_run', '')}`), but this run still finds it."
+                + (f" Your note then: {st['note']}" if st.get("note") else "")]
+    return []
 
 
 def write_briefs(run: Path, analysis: dict) -> int:
@@ -591,10 +613,11 @@ def write_briefs(run: Path, analysis: dict) -> int:
             lines.append("")
         lines += [f"This analysis describes `{c['file']}` as of git `{meta.get('git', '')}`. If the chapter changed since, check before acting on them.", ""]
 
-        fix_conv = [cv for cv in convs if cid in cv.get("fix_in", [])]
-        fix_here = [x for x in findings if cid in x.get("fix_in", [])]
-        shows = [x for x in findings if cid in x.get("chapters", []) and cid not in x.get("fix_in", [])]
-        in_conv = [cv for cv in convs if cid in cv.get("chapters", []) and cv not in fix_conv]
+        fix_conv = [cv for cv in convs if cid in cv.get("fix_in", []) and not is_closed(cv)]
+        fix_here = [x for x in findings if cid in x.get("fix_in", []) and not is_closed(x)]
+        shows = [x for x in findings if cid in x.get("chapters", []) and cid not in x.get("fix_in", []) and not is_closed(x)]
+        in_conv = [cv for cv in convs if cid in cv.get("chapters", []) and cv not in fix_conv and not is_closed(cv)]
+        closed_here = [cv for cv in convs if cid in cv.get("fix_in", []) and is_closed(cv)] +             [x for x in findings if cid in x.get("fix_in", []) and is_closed(x)]
 
         lines += [f"## Fix here ({len(fix_conv) + len(fix_here)})", ""]
         if not fix_conv and not fix_here:
@@ -603,7 +626,8 @@ def write_briefs(run: Path, analysis: dict) -> int:
             fids = [f for f in cv.get("findings", []) if f in by_id]
             lines += [f"### {cv['id']} · {cv['title']}",
                       f"Where frameworks agree ({', '.join(fids)}) · {ch_ranges(cv.get('chapters', []), order)}",
-                      "", cv.get("read", ""), "", f"**Fix:** {cv.get('fix', '')}"]
+                      "", cv.get("read", ""), "", f"**Fix:** {cv.get('fix', '')}"] + status_lines(cv) + (
+                      [f"Progress: {cv['progress']}."] if cv.get("progress") else [])
             others = [i for i in cv.get("fix_in", []) if i != cid]
             if others:
                 lines.append(f"Also fix in: {ch_ranges(others, order)}")
@@ -613,7 +637,7 @@ def write_briefs(run: Path, analysis: dict) -> int:
             agree = f"part of {cv['id']} {cv['title']}" if cv else "one framework"
             lines += [f"### {x['id']} · {x['severity']} · {x['title']}",
                       f"{x['fw_name']} · shows in {ch_ranges(x['chapters'], order)} · {agree}",
-                      "", f"**Problem:** {x.get('problem', '')}", "", f"**Suggestion:** {x.get('suggestion', '')}"]
+                      "", f"**Problem:** {x.get('problem', '')}", "", f"**Suggestion:** {x.get('suggestion', '')}"] + status_lines(x)
             others = [i for i in x.get("fix_in", []) if i != cid]
             if others:
                 lines.append(f"Also fix in: {ch_ranges(others, order)}")
@@ -621,6 +645,17 @@ def write_briefs(run: Path, analysis: dict) -> int:
             for e in ev:
                 ec = chapters[order[e["chapter"]]] if e.get("chapter") in order else None
                 lines += ["", f"> {e.get('quote', '')}  ", f"> {ch_name(e['chapter'])} L{e.get('line')}{' · ' + ec['file'] if ec else ''}"]
+            lines.append("")
+
+        if closed_here:
+            lines += [f"## Closed here ({len(closed_here)})", "",
+                      "Marked closed in Draftboard. Do not raise these again unless the text changes back.", ""]
+            for x in closed_here:
+                st = x["state"]
+                ev = (st.get("evidence") or [{}])[0]
+                quote = f" ({ch_name(ev['chapter'])} L{ev['line']}: \"{ev['quote']}\")" if ev.get("quote") else ""
+                lines.append(f"- **{x['id']}** {st['status']} {st.get('date', '')} · {x['title']}"
+                             + (f". {st['note']}" if st.get("note") else "") + quote)
             lines.append("")
 
         lines += [f"## Shows here, fix elsewhere ({len(shows)})", ""]
@@ -856,6 +891,13 @@ def main() -> int:
     p.add_argument("run")
     p = sub.add_parser("sample")
     p.add_argument("--volume")
+    p = sub.add_parser("status", help="Mark a finding or convergence item fixed, partly, kept or stale (or open again)")
+    p.add_argument("id", nargs="?", help="Finding or convergence id, for example AR3 or C2")
+    p.add_argument("state", nargs="?", choices=STATES + ("open",))
+    p.add_argument("--note")
+    p.add_argument("--evidence", action="append", help="CHAPTER:LINE:QUOTE from the current text; repeatable")
+    p.add_argument("--volume")
+    p.add_argument("--list", action="store_true")
     p = sub.add_parser("link", help="Record the published explorer URL for a volume, so briefs link to it")
     p.add_argument("url")
     p.add_argument("--volume")
@@ -867,7 +909,171 @@ def main() -> int:
     PROJECT_ROOT = find_project(Path(args.project).resolve() if args.project else Path.cwd())
     CFG = load_config(PROJECT_ROOT)
     return {"check": cmd_check, "units": cmd_units, "ledger": cmd_ledger, "build": cmd_build,
-            "sample": cmd_sample, "link": cmd_link}[args.cmd](args)
+            "sample": cmd_sample, "link": cmd_link, "status": cmd_status}[args.cmd](args)
+
+
+# ---------- issue status ----------
+
+STATES = ("fixed", "partly", "kept", "stale")
+CLOSED = ("fixed", "kept", "stale")
+
+
+def status_path(volume_key: str) -> Path:
+    return briefs_dir() / volume_key.replace(" ", "-") / "_status.json"
+
+
+def load_status(volume_key: str) -> list[dict]:
+    p = status_path(volume_key)
+    return load_json(p).get("items", []) if p.exists() else []
+
+
+def save_status(volume_key: str, items: list[dict]) -> None:
+    p = status_path(volume_key)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    doc = {"about": "Draftboard issue status. Written by `draftboard.py status`; survives rebuilds and new runs.",
+           "items": items}
+    p.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
+
+
+def apply_status(analysis: dict) -> None:
+    """Attach each finding's and convergence item's status from the volume's status file."""
+    meta = analysis["meta"]
+    items = load_status(meta["book"])
+    run = meta["run"]
+    if not items:
+        return
+    latest = lambda xs: max(xs, key=lambda e: e.get("date", "")) if xs else None
+    matched = set()
+
+    def find(kind: str, xid: str, title: str, fw: str = ""):
+        same = [e for e in items if e.get("kind") == kind and e.get("run") == run and e.get("id") == xid]
+        if same:
+            return same[-1]
+        older = [e for e in items if e.get("kind") == kind and e.get("run") != run and e.get("title") == title
+                 and e.get("framework", "") == fw]
+        return latest(older)
+
+    def state_for(e: dict) -> dict:
+        s = {k: e.get(k) for k in ("status", "date", "note", "evidence", "git") if e.get(k)}
+        if e.get("run") != run:
+            s["earlier_run"] = e.get("run")
+            if e["status"] in ("fixed", "stale"):
+                s = {"status": "reopened", "was": e["status"], "date": e.get("date"), "note": e.get("note", ""),
+                     "earlier_run": e.get("run")}
+        return s
+
+    for fw in analysis["frameworks"]:
+        for x in fw.get("findings", []):
+            e = find("finding", x["id"], x["title"], fw.get("key", ""))
+            if e:
+                matched.add(id(e))
+                x["state"] = state_for(e)
+    by_id = {x["id"]: x for fw in analysis["frameworks"] for x in fw.get("findings", [])}
+    for c in analysis.get("convergence", []):
+        e = find("convergence", c["id"], c["title"])
+        if e:
+            matched.add(id(e))
+            c["state"] = state_for(e)
+            continue
+        fs = [by_id[f] for f in c.get("findings", []) if f in by_id]
+        closed = [x for x in fs if x.get("state", {}).get("status") in CLOSED]
+        if fs and len(closed) == len(fs):
+            c["state"] = {"status": "fixed", "derived": True, "date": max(x["state"].get("date", "") for x in closed),
+                          "note": "All of its findings are closed."}
+        elif closed:
+            c["progress"] = f"{len(closed)} of {len(fs)} findings closed"
+    analysis["confirmed"] = [{k: e.get(k) for k in ("id", "title", "framework", "date", "note", "run")}
+                             for e in items if e.get("run") != run and e.get("status") == "fixed" and id(e) not in matched]
+
+
+def is_closed(x: dict) -> bool:
+    return x.get("state", {}).get("status") in CLOSED
+
+
+def norm_quote(s: str) -> str:
+    s = s.replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"').replace("—", "-")
+    return re.sub(r"[\s*_]+", " ", s).strip().lower()
+
+
+def check_evidence(ev: str, chapters: dict) -> dict:
+    """CH:LINE:QUOTE -> the quote found in that unit's text, with its real line number."""
+    m = re.match(r"^([^:]+):(\d+):(.+)$", ev, re.S)
+    if not m:
+        raise SystemExit(f"Evidence must be CHAPTER:LINE:QUOTE, got {ev!r}")
+    cid, line, quote = m[1].strip(), int(m[2]), m[3].strip().strip('"')
+    c = chapters.get(cid)
+    if not c:
+        raise SystemExit(f"Unknown {unit_noun()} {cid!r} in evidence")
+    lines = (PROJECT_ROOT / c["file"]).read_text(encoding="utf-8").splitlines()
+    lo, hi = (c.get("start", 1), c.get("end", len(lines))) if c.get("start") else (1, len(lines))
+    want = norm_quote(quote)
+    order = sorted(range(lo, hi + 1), key=lambda n: (abs(n - line), n))
+    for n in order:
+        if 1 <= n <= len(lines) and want in norm_quote(lines[n - 1]):
+            return {"chapter": cid, "line": n, "quote": quote}
+    raise SystemExit(f"Quote not found in {c['file']} ({ch_name(cid)}): {quote!r}. Nothing was marked.")
+
+
+def cmd_status(args) -> int:
+    volume = volume_for(args.volume)
+    latest = load_json(runs_dir() / "latest.json") if (runs_dir() / "latest.json").exists() else {}
+    entry = latest.get(volume["key"])
+    if not entry:
+        raise SystemExit(f"No run for {volume['label']} yet. Run /draftboard:map first.")
+    run = PROJECT_ROOT / entry["folder"]
+    analysis = merge(run)
+    items = load_status(volume["key"])
+
+    if args.list or not args.id:
+        if not items:
+            print(f"{volume['label']}: no findings marked yet.")
+        for e in sorted(items, key=lambda e: e.get("date", "")):
+            here = "" if e.get("run") == run.name else f" (from run {e.get('run')})"
+            print(f"{e['id']:>5}  {e['status']:<7} {e.get('date', '')}  {e.get('title', '')}{here}"
+                  + (f"  · {e['note']}" if e.get("note") else ""))
+        return 0
+
+    findings = {x["id"]: (x, fw) for fw in analysis["frameworks"] for x in fw.get("findings", [])}
+    convs = {c["id"]: c for c in analysis.get("convergence", [])}
+    xid = args.id.upper()
+    if xid in findings:
+        x, fw = findings[xid]
+        base = {"id": xid, "kind": "finding", "framework": fw.get("key", ""), "title": x["title"],
+                "chapters": x.get("chapters", []), "fix_in": x.get("fix_in", [])}
+    elif xid in convs:
+        c = convs[xid]
+        base = {"id": xid, "kind": "convergence", "title": c["title"],
+                "chapters": c.get("chapters", []), "fix_in": c.get("fix_in", [])}
+    else:
+        raise SystemExit(f"No finding or convergence item {xid!r} in run {run.name}.")
+
+    same = lambda e: e.get("run") == run.name and e.get("id") == xid
+    if args.state == "open":
+        kept = [e for e in items if not same(e)]
+        if len(kept) == len(items):
+            print(f"{xid} was not marked.")
+            return 0
+        save_status(volume["key"], kept)
+        print(f"{xid} reopened.")
+        return build(run, merge(run))
+
+    if args.state in ("fixed", "partly") and not args.evidence:
+        raise SystemExit(f"Marking {xid} {args.state} needs --evidence CHAPTER:LINE:QUOTE from the current text.")
+    if args.state in ("kept", "stale") and not args.note:
+        raise SystemExit(f"Marking {xid} {args.state} needs --note saying why.")
+    chapters = {c["id"]: c for c in analysis["chapters"]}
+    evidence = [check_evidence(ev, chapters) for ev in (args.evidence or [])]
+    sha = git("rev-parse", "--short", "HEAD")
+    dirty = bool(git("status", "--porcelain"))
+    new = dict(base, status=args.state, date=datetime.now().strftime("%Y-%m-%d"),
+               git=sha + (" (uncommitted changes)" if dirty and sha else ""), run=run.name,
+               note=args.note or "", evidence=evidence)
+    items = [e for e in items if not same(e)] + [new]
+    save_status(volume["key"], items)
+    print(f"{xid} marked {args.state}: {base['title']}")
+    for ev in evidence:
+        print(f"  {ch_name(ev['chapter'])} L{ev['line']}: {ev['quote']}")
+    return build(run, merge(run))
 
 
 def cmd_link(args) -> int:

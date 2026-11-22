@@ -38,6 +38,7 @@ You also need **Python 3.10 or newer** on your PATH (`python`, `python3` or `py`
 1. **Set up:** `/draftboard:setup`. It looks at your project, asks a few questions (form, which files, protagonist, genre), and writes `draftboard.json`. A few minutes.
 2. **Map the draft:** `/draftboard:map`. Several agents read the whole work in parallel (a 170k-word novel uses about eleven).
 3. **Work chapter by chapter:** ask "what issues am I in?" while working on a chapter or scene (`/draftboard:issues`), or say "add a note to this chapter: …".
+4. **Close issues as you fix them:** say "AR3 is fixed" or "I'm keeping ST2". Claude checks the current text, quotes the line that fixes it, and marks it. Closed findings drop off the map and out of the briefs, and the next run tells you if one comes back.
 
 ## How much it uses
 
