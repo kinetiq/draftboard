@@ -36,7 +36,7 @@ Supporting agents: `reader.md` (stage 1) and `tension.md` (one agent scores tens
 
 1. **Config.** Run `<script> check`. If it says there is no `draftboard.json`, stop and run the setup skill (`/draftboard:setup`) first.
 2. **Scope.** Ask which volume to run if `draftboard.json` has more than one. A run covers one volume.
-3. **Lineup.** Show the lineup in one line, the agent count (readers + tension + frameworks; a 170k-word novel is about 11 agents, a feature script about 8), and a usage estimate scaled to the word count (about 2 million tokens for a 170k-word novel, proportionally less for shorter works). Ask the author to confirm, add, or remove frameworks.
+3. **Lineup.** Show the lineup in one line, the agent count (readers + tension + frameworks; a 170k-word novel is about 11 agents, a feature script about 8), and a usage estimate (70,000 per agent + 7 per word + 150,000 for the main session: about 700,000 for a short script, about 2,100,000 for a 170k-word novel). Ask the author to confirm, add, or remove frameworks.
 4. **Units.** Run `<script> units --volume <key>`. It creates the run folder, writes `chapters.json`, and prints reading groups of about 40k words, with each unit's file (and line range, for a script). Note the run folder it prints.
 
 ## Step 2: Read the work (stage 1)

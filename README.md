@@ -41,7 +41,16 @@ You also need **Python 3.10 or newer** on your PATH (`python`, `python3` or `py`
 
 ## How much it uses
 
-Draftboard reads your whole work once, then works from notes, so usage scales with length. As a guide, a **170,000-word novel took about 2 million tokens**; a feature screenplay or novella takes a fraction of that. On larger plans that is comfortable; on smaller plans a long novel can use a big share of your limits, so run it when you won't need Claude for a while. Draftboard tells you its estimate and asks before it starts.
+Each run starts about eight to eleven agents, and every agent has a fixed setup cost before it reads a word, so even a short script uses a fair amount. As a guide:
+
+| Work | Tokens, roughly |
+|---|---|
+| A short script or story | 700,000 |
+| A feature screenplay (about 25,000 words) | 900,000 |
+| A 90,000-word novel | 1,500,000 |
+| A 170,000-word novel | 2,100,000 |
+
+On larger plans that is comfortable; on smaller plans a long novel can use a big share of your limits, so run it when you won't need Claude for a while. Draftboard tells you its estimate and asks before it starts.
 
 **Use a capable model.** The analysis is careful reading and judgment; the latest Opus at medium effort works well.
 
