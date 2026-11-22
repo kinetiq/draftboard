@@ -1,0 +1,20 @@
+{
+  "name": "draftboard",
+  "version": "0.1.0",
+  "description": "A story doctor for your draft. Diagnoses the structure; never touches the manuscript. Reads a finished novel or screenplay through six craft frameworks, maps where they agree, and briefs you on what to fix in each chapter or scene.",
+  "author": {
+    "name": "kinetiq"
+  },
+  "repository": "https://github.com/kinetiq/draftboard",
+  "keywords": [
+    "writing",
+    "fiction",
+    "novel",
+    "screenplay",
+    "story structure",
+    "save the cat",
+    "story grid",
+    "editing"
+  ],
+  "license": "PolyForm-Shield-1.0.0"
+}

@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Read|Edit|Write|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python \"${CLAUDE_PLUGIN_ROOT}/scripts/issues_hook.py\" 2>/dev/null || python3 \"${CLAUDE_PLUGIN_ROOT}/scripts/issues_hook.py\" 2>/dev/null || true",
+            "timeout": 15,
+            "shell": "bash"
+          }
+        ]
+      }
+    ]
+  }
+}

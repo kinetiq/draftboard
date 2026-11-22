@@ -1,0 +1,12 @@
+{
+  "name": "draftboard",
+  "description": "Draftboard: a story doctor for your draft.",
+  "owner": { "name": "kinetiq" },
+  "plugins": [
+    {
+      "name": "draftboard",
+      "source": "./",
+      "description": "A story doctor for your draft. Diagnoses the structure; never touches the manuscript."
+    }
+  ]
+}

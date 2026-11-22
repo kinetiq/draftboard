@@ -1,0 +1,3 @@
+{ "title": "Night Ferry", "author": "Test", "form": "screenplay", "protagonist": "Dee",
+  "volumes": [ { "key": "script", "label": "Draft 1", "source": { "type": "fountain", "file": "night-ferry.fountain" } } ],
+  "genre": { "lane": "Contained thriller", "core": "Thriller", "comps": ["Locke"] } }

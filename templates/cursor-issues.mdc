@@ -1,0 +1,42 @@
+---
+description: Draftboard structure issues and the author's own notes for the chapter or scene being worked on. Use when working on a chapter or scene, or when asked what issues it has, what to fix here, whether a revision helps, or to add a note to it.
+globs: {{GLOBS}}
+alwaysApply: false
+---
+
+<!-- Installed by Draftboard setup. Briefs live in {{BRIEFS}}. Rerun /draftboard:setup in Claude Code to update. -->
+
+# Unit issues
+
+After a Draftboard run, every unit (chapter or scene) has a short brief: the author's own notes, what to fix in this unit, what only shows here, tension and value shift, and the threads in play. This explains how to find and use it. The brief is generated, except its **My notes** section, which belongs to the author and survives rebuilds. Never edit anything else in a brief.
+
+## Find the brief
+
+1. Read `draftboard.json` at the project root.
+2. **Which volume:** the volume whose `source` contains the file (a `dir` for one-file-per-unit sources, a `file` for a single script).
+3. **Which unit:**
+   - One file per unit: the unit id is the part of the file name the volume's `pattern` captures (group 1). For example `24-McFreedom-s.md` is `24`. Match by id, not by full file name; files get renamed.
+   - A single script (Fountain or FDX): ask which scene, or use the scene the conversation is about. Scene ids are `001`, `002`… in order, unless the script numbers its scenes.
+4. The brief is `<output.briefs>/<volume key>/<id>.md` (default `draftboard/briefs/<volume key>/<id>.md`). `<output.runs>/latest.json` names the run and git commit it came from.
+5. No brief: say there is no Draftboard analysis for this unit yet, in one line, and carry on.
+
+## Check it is current
+
+The brief names the git commit it was built from. If the project is a git repository, run `git diff --stat <commit> -- "<file>"`. If the file changed, say so once: "This has changed since the analysis; check these against the current text." Do not treat a finding as current just because the brief lists it.
+
+## My notes
+
+The section between `<!-- my-notes:start -->` and `<!-- my-notes:end -->` holds the author's own issues for the unit.
+
+- **Treat them as the first issues**, ahead of the framework findings. They are the author's decisions and worries, not a model's reading.
+- **Adding a note:** when asked to add a note, track an issue, or "note that…", add one bullet between the markers: `- YYYY-MM-DD: the note`, in the author's words. Never touch the markers or anything outside them.
+- **Resolving a note:** when the author says one is done, delete the bullet, or mark it `(done YYYY-MM-DD)` if they want a record.
+- Issues about the whole work rather than one unit belong in the author's own notes file, not in a brief.
+
+## Use it
+
+- **First time a unit comes up in a conversation:** mention the author's notes and the "Fix here" items in one line each. Skip it if there are none. Do not repeat it every turn.
+- **"What issues am I in?"** or similar: give My notes first, then "Fix here" with the problem and suggestion in a sentence each, then "Shows here, fix elsewhere" in one line each with where the fix goes, then tension and value shift in one line. End with the explorer link if the brief has one.
+- **While revising:** if a change addresses a "Fix here" item, say which. If it touches a thread or promise the brief lists as opening or closing here, mention it. If it would make a listed problem worse, say so.
+- **Weigh findings honestly.** A finding inside a "where they agree" item (C1, C2…) has several frameworks behind it; one marked "one framework" is a single reading. All of them are readings through a craft framework, not facts. If the author disagrees or keeps something on purpose, accept it.
+- Never edit the manuscript or script because of a finding. Suggest; the author decides.
