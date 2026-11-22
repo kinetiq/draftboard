@@ -41,14 +41,14 @@ You also need **Python 3.10 or newer** on your PATH (`python`, `python3` or `py`
 
 ## How much it uses
 
-Each run starts about eight to eleven agents, and every agent has a fixed setup cost before it reads a word, so even a short script uses a fair amount. As a guide:
+Each run starts about eight to eleven agents. Most of the cost is reading your text, so it grows with length. As a guide:
 
 | Work | Tokens, roughly |
 |---|---|
-| A short script or story | 700,000 |
-| A feature screenplay (about 25,000 words) | 900,000 |
-| A 90,000-word novel | 1,500,000 |
-| A 170,000-word novel | 2,100,000 |
+| A short script or story | 350,000 |
+| A feature screenplay (about 25,000 words) | 530,000 |
+| A 90,000-word novel | 1,000,000 |
+| A 170,000-word novel | 1,600,000 |
 
 On larger plans that is comfortable; on smaller plans a long novel can use a big share of your limits, so run it when you won't need Claude for a while. Draftboard tells you its estimate and asks before it starts.
 

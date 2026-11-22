@@ -63,6 +63,6 @@ Start the next step with /draftboard:map
 Note: Use a capable model! The latest Opus on Medium works well.
 ```
 
-Estimate usage as: 70,000 per agent + 7 per word + 150,000 for the main session. Agents = one reader per 43,000 words (at least one) + the tension agent + one per framework (6 by default). For example, an 8-scene short script is about 700,000 tokens, and a 170,000-word novel is about 2,100,000. Round to two significant figures and write it with commas. Above 60,000 words, add to the first paragraph: "This is a large run; it can use a big share of a session's limits on smaller plans." If you added a Cursor rule, add a line before the note: "Added a Cursor rule so Cursor sees each <chapter|scene>'s brief."
+Estimate usage as: 25,000 per agent + 7 per word + 150,000 for the main session. Agents = one reader per 43,000 words (at least one) + the tension agent + one per framework (6 by default). For example, an 8-scene short script is about 350,000 tokens, and a 170,000-word novel is about 1,600,000. Round to two significant figures and write it with commas. Above 60,000 words, add to the first paragraph: "This is a large run; it can use a big share of a session's limits on smaller plans." If you added a Cursor rule, add a line before the note: "Added a Cursor rule so Cursor sees each <chapter|scene>'s brief."
 
 Never edit the manuscript or script.
