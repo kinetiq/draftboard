@@ -19,6 +19,7 @@ sample  For developing Draftboard: builds an explorer with placeholder findings 
 
 import argparse
 import difflib
+import html
 import json
 import math
 import random
@@ -391,6 +392,17 @@ def validate(analysis: dict) -> tuple[list[str], list[str]]:
     return errors, warnings
 
 
+def page_title(meta: dict) -> str:
+    """Draftboard: <title, or its initials if several words> [<volume>] <Mon-Day of the run>."""
+    words = re.findall(r"[A-Za-z0-9']+", meta.get("title", ""))
+    short = words[0] if len(words) == 1 else "".join(w[0].upper() for w in words) or "Draft"
+    if len(CFG.get("volumes", [])) > 1 and meta.get("volume"):
+        short += f" {meta['volume']}"
+    m = re.match(r"(\d{4})-(\d{2})-(\d{2})", meta.get("run", ""))
+    day = datetime(int(m[1]), int(m[2]), int(m[3])).strftime("%b-%d") if m else ""
+    return f"Draftboard: {short} {day}".strip()
+
+
 def render(analysis: dict, out: Path) -> None:
     template = TEMPLATE.read_text(encoding="utf-8")
     if PLACEHOLDER not in template:
@@ -400,7 +412,8 @@ def render(analysis: dict, out: Path) -> None:
     words = {"{{HERO}}": analysis["meta"].get("protagonist", "the protagonist"),
              "{{UNIT}}": noun, "{{Unit}}": noun.capitalize(), "{{UNITS}}": noun + "s", "{{Units}}": noun.capitalize() + "s",
              "{{UNIT_SHORT}}": analysis["meta"].get("unit_short", "Ch"),
-             "{{WORK}}": "script" if analysis["meta"].get("form") in SCREEN_FORMS else "book"}
+             "{{WORK}}": "script" if analysis["meta"].get("form") in SCREEN_FORMS else "book",
+             "{{PAGE_TITLE}}": html.escape(page_title(analysis["meta"]))}
     for k, v in words.items():
         template = template.replace(k, v)
     out.write_text(template.replace(PLACEHOLDER, payload), encoding="utf-8")
@@ -662,7 +675,7 @@ def write_briefs(run: Path, analysis: dict) -> int:
         at = lines.index(next(l for l in lines if l.startswith("## Fix here")))
         stable_lines = [l.replace("Do not edit; rebuild instead.", "Only the My notes section is yours to edit; the rest is rebuilt.") for l in lines[:at]] \
             + notes_block(mine) + lines[at:]
-        (stable / f"{cid}.md").write_text("\n".join(stable_lines), encoding="utf-8")
+        (stable / f"{cid}.md").write_text("\n".join(stable_lines), encoding="utf-8", newline="\n")
         note_count = len([l for l in mine.splitlines() if l.strip()])
         stable_index.append(f"| [{ch_name(cid)}]({cid}.md) | {c['title']} | {note_count or ''} | {len(fix_conv) + len(fix_here)} | {len(shows)} | "
                             f"{tension['values'].get(cid, '') if tension else ''} |")
@@ -677,7 +690,7 @@ def write_briefs(run: Path, analysis: dict) -> int:
         dump = stable / "_unplaced-notes.md"
         prev = dump.read_text(encoding="utf-8") if dump.exists() else "# Unplaced notes\n\nNotes the build could not match to a chapter by title or number. Move each one into the right brief's My notes section, then delete it here.\n"
         add = [f"\n## From old {ch_name(oid)} · {t} (build {datetime.now().strftime('%Y-%m-%d %H:%M')})\n\n{n}\n" for oid, t, n in unplaced]
-        dump.write_text(prev + "".join(add), encoding="utf-8")
+        dump.write_text(prev + "".join(add), encoding="utf-8", newline="\n")
         print(f"WARNING: {len(unplaced)} chapter notes could not be placed; saved to {dump}")
     current = {c["id"] for c in chapters}
     for f in stable.glob("*.md"):
@@ -686,7 +699,7 @@ def write_briefs(run: Path, analysis: dict) -> int:
     shead = [f"# {unit_noun().capitalize()} briefs · {meta.get('volume', '')}", "",
              f"Current run: `{run.name}`. Rebuilt by Draftboard. Each brief's My notes section is yours and survives rebuilds; the rest is regenerated.", "",
              f"| {unit_noun().capitalize()} | Title | My notes | Fix here | Shows here | Tension |", "|---|---|--:|--:|--:|--:|"]
-    (stable / "README.md").write_text("\n".join(shead + stable_index) + "\n", encoding="utf-8")
+    (stable / "README.md").write_text("\n".join(shead + stable_index) + "\n", encoding="utf-8", newline="\n")
     return len(chapters)
 
 
