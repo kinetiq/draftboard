@@ -13,7 +13,7 @@ Read `${CLAUDE_PLUGIN_ROOT}/references/composer.md` and follow it step by step. 
 Claude Code details:
 
 1. If the project has no `draftboard.json`, run the setup skill first (`/draftboard:setup`).
-2. Confirm the lineup with AskUserQuestion. Put the core six first and say the agent count.
+2. Confirm the lineup with AskUserQuestion. Put the core six first, say the agent count, and give a usage estimate scaled to the word count: about 2 million tokens for a 170,000-word novel, proportionally less for shorter works. For a long novel, say it can use a large share of a session's limits on smaller plans.
 3. Keep a task list with one item per composer step.
 4. Start agents with the Agent tool, `subagent_type: general-purpose`, all agents of a stage in the same message so they run in parallel. Give every agent absolute paths: its brief under `${CLAUDE_PLUGIN_ROOT}/references/frameworks/`, the run folder, `chapters.json`, `ledger.json`, `draftboard.json`, and the text files.
 5. Do the finding checks and the agreement step yourself, not in a subagent.

@@ -40,13 +40,12 @@ Then confirm in plain text, in one message: title, protagonist, author name (opt
    - **No units, or the wrong ones:** fix `source` (usually the `pattern` for file names, or the file path) and run `check` again. Show the writer the first and last few units so they can confirm.
    - **Very short units flagged:** ask whether they are placeholders. They can stay.
 3. If they use Cursor, offer to add a Cursor rule so Cursor's agent also sees each unit's brief. If yes, copy `${CLAUDE_PLUGIN_ROOT}/templates/cursor-issues.mdc` to `.cursor/rules/draftboard-issues.mdc`, replacing `{{GLOBS}}` with the source folders as globs (for example `book 1/*.md,book 2/*.md`) and `{{BRIEFS}}` with the briefs folder.
-4. Offer a preview: the script's `sample` command builds an explorer with placeholder findings over their real units, at `draftboard/runs/sample/explorer.html`. Say clearly that the findings in it are fake.
-
 ## 4. Hand off
 
-Tell them, in a few lines:
-- what was set up (title, form, volumes, unit count);
-- that a full analysis is `/draftboard:map`, that it runs several agents over the whole work, and roughly how long the work is in words;
+End with the next step, not a question about something else. In a few lines:
+- what was set up (title, form, volumes, unit count, total words);
+- **the next step is `/draftboard:map`**, which runs several agents over the whole work;
+- **what it costs:** it reads the whole work once and then works from notes, so usage scales with length. As a guide, a 170,000-word novel took about 2 million tokens; a feature script or novella takes a fraction of that. Give the estimate for their word count, and say a long novel can use a large share of a session's limits on smaller plans;
 - that they can rerun `/draftboard:setup` any time to change settings.
 
 Never edit the manuscript or script.

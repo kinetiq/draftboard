@@ -36,8 +36,12 @@ You also need **Python 3.10 or newer** on your PATH (`python`, `python3` or `py`
 ## Use
 
 1. **Set up:** `/draftboard:setup`. It looks at your project, asks a few questions (form, which files, protagonist, genre), and writes `draftboard.json`. A few minutes.
-2. **Map the draft:** `/draftboard:map`. This is a big run: several agents read the whole work in parallel (a 170k-word novel uses about eleven). Expect it to take a while and use a fair amount of your plan's usage.
+2. **Map the draft:** `/draftboard:map`. Several agents read the whole work in parallel (a 170k-word novel uses about eleven).
 3. **Work chapter by chapter:** ask "what issues am I in?" while working on a chapter or scene (`/draftboard:issues`), or say "add a note to this chapter: …".
+
+## How much it uses
+
+Draftboard reads your whole work once, then works from notes, so usage scales with length. As a guide, a **170,000-word novel took about 2 million tokens**; a feature screenplay or novella takes a fraction of that. On larger plans that is comfortable; on smaller plans a long novel can use a big share of your limits, so run it when you won't need Claude for a while. Draftboard tells you its estimate and asks before it starts.
 
 ## What it reads
 

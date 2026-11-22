@@ -13,7 +13,8 @@ check   Reads draftboard.json, finds the units (chapters or scenes) and reports 
 units   Writes RUN/chapters.json for one volume and prints reading groups balanced by words.
 ledger  Joins RUN/ledger/*.json into RUN/ledger.json and lists names that look like duplicates.
 build   Merges the run into analysis.json, checks it, writes explorer.html and the unit briefs.
-sample  Builds an explorer with placeholder findings over the real unit list, to try the page.
+sample  For developing Draftboard: builds an explorer with placeholder findings over the
+        real unit list, to test the page. Not part of the writer-facing flow.
 """
 
 import argparse
