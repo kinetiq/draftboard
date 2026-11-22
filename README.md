@@ -43,6 +43,8 @@ You also need **Python 3.10 or newer** on your PATH (`python`, `python3` or `py`
 
 Draftboard reads your whole work once, then works from notes, so usage scales with length. As a guide, a **170,000-word novel took about 2 million tokens**; a feature screenplay or novella takes a fraction of that. On larger plans that is comfortable; on smaller plans a long novel can use a big share of your limits, so run it when you won't need Claude for a while. Draftboard tells you its estimate and asks before it starts.
 
+**Use a capable model.** The analysis is careful reading and judgment; the latest Opus at medium effort works well.
+
 ## What it reads
 
 | Your project | In `draftboard.json` |

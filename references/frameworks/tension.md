@@ -40,7 +40,7 @@ The composer gives you absolute paths to:
 2. **Peak.** From the ledger scenes, pick the scene most likely to hold the peak: the biggest stakes, the largest absolute shift, danger on the page. Read that scene's line range. If two are close, read both.
 3. Score both on the table. Write one sentence for each naming the moment that decides it, with its line number.
 
-Chapters under 200 words are placeholders. Give them the previous chapter's scores and the reason "placeholder".
+A unit with almost no text is a placeholder: under 40 words in a novel, under 8 in a script (the `check` command flags them). Give it the previous unit's scores and the reason "placeholder". Short scenes are not placeholders; score every real scene on its own.
 
 ## Output
 

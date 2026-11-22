@@ -7,6 +7,8 @@ description: Show Draftboard's structure issues and the author's own notes for t
 
 Read `${CLAUDE_PLUGIN_ROOT}/references/issues.md` and follow it.
 
+Keep answers short: one line per item, no preamble or recap.
+
 Claude Code details:
 
 - A PostToolUse hook already adds a short summary the first time a chapter file is read or edited in a session. Use it, and open the full brief when you need the problem, suggestion or evidence.

@@ -23,7 +23,12 @@ Agent briefs live in `<plugin>/references/frameworks/`. Every framework agent al
 | `pacing` | Story Grid value shifts | `pacing.md` | Does each unit turn a value? Where does tension sag? |
 | `genre` | Genre contract | `genre.md` | Does the work deliver what its genre promises? |
 
-**On request only:** `theme` (Truby's moral argument, `theme.md`) and `opposition` (Truby's opponent web, `opposition.md`).
+**Optional (offered, off by default):**
+
+| Key | Framework | Brief | Add it when |
+|---|---|---|---|
+| `theme` | Moral argument (Truby) | `theme.md` | The story argues something: a moral question its characters answer in different ways. Checks that the question is clear, that opponents argue back, and that the climax decides it through a choice. Most useful for character dramas, literary work, and any story whose ending should *mean* something. |
+| `opposition` | Opponent web (Truby) | `opposition.md` | The story has several antagonists, rivals, or hostile forces. Checks that they pressure the hero from different sides, escalate rather than repeat, stay active on the page, and that the climax faces the main opponent, not a stand-in. Less useful with a single antagonist. |
 
 Supporting agents: `reader.md` (stage 1) and `tension.md` (one agent scores tension for the whole work).
 
@@ -101,7 +106,23 @@ This is the point of the run. Write `<run>/composer.json`:
 
 ## Step 7: Report
 
-In chat: the headline; the top 3 convergence items, one line each; where the explorer is; what you dropped in Step 4, in one line. Do not paste the frameworks' reports.
+The explorer holds the detail; the chat report only points the author at it. Use exactly this shape, and nothing else:
+
+```
+<The headline, one or two sentences.>
+
+Fix first:
+1. <C1 title> (fix in <units>)
+2. <C2 title> (fix in <units>)
+3. <C3 title> (fix in <units>)
+
+Explorer: <link or path>. Each <chapter|scene>'s brief links to it.
+```
+
+- Titles only for the fix-first items; no explanations. List fewer if there are fewer.
+- With no convergence items, list the top three high findings instead, by id and title.
+- Add one line `Dropped: <n> findings whose quotes did not hold up.` only if you dropped any.
+- Anything about how the run went (a rule you departed from, a retry) goes in `checks.md`, not the report.
 
 ## Limits
 
