@@ -28,6 +28,8 @@ Agent briefs live in `<plugin>/references/frameworks/`. Every framework agent al
 | Key | Framework | Brief | Add it when |
 |---|---|---|---|
 | `theme` | Moral argument (Truby) | `theme.md` | The story argues something: a moral question its characters answer in different ways. Checks that the question is clear, that opponents argue back, and that the climax decides it through a choice. Most useful for character dramas, literary work, and any story whose ending should *mean* something. |
+| `openings` | Openings (Edgerton, Sanderson, Kress) | `openings.md` | The opening is new or under revision, or readers drop off early. Checks that the first pages start on the real problem with no warm-up, and that the opening's promises of tone, genre and story are the ones the book keeps. Reads the first 15% in full, so it costs more than other frameworks. |
+| `endings` | Endings (Sanderson's First Law, McKee) | `endings.md` | The ending decides the book: a climax won by powers, magic or rules, a twist, or a first book in a series. Checks that the climax answers the central question with means the reader already understood, through the hero's own choice, and sorts what is left open into series hooks and loose ends. Reads the last 15% in full, so it costs more than other frameworks. |
 | `opposition` | Opponent web (Truby) | `opposition.md` | The story has several antagonists, rivals, or hostile forces. Checks that they pressure the hero from different sides, escalate rather than repeat, stay active on the page, and that the climax faces the main opponent, not a stand-in. Less useful with a single antagonist. |
 
 Supporting agents: `reader.md` (stage 1) and `tension.md` (one agent scores tension for the whole work).
@@ -56,7 +58,7 @@ When they finish, check each ledger parses and has one entry per unit. Rerun a r
    - **Every framework agent except `pacing`.**
 2. When the tension agent finishes, check `tension.json` parses, has one entry per unit, and every `peak` is at least its `tension`. Then start **`pacing`**, which reads `tension.json`.
 
-Give each framework agent: `_shared.md`, its own brief, the run folder, `chapters.json`, `ledger.json`, `draftboard.json`. Each writes `<run>/frameworks/<key>.json`. They read the ledger first and open the text only to confirm a finding or pull a quote.
+Give each framework agent: `_shared.md`, its own brief, the run folder, `chapters.json`, `ledger.json`, `draftboard.json`. Each writes `<run>/frameworks/<key>.json`. They read the ledger first and open the text only to confirm a finding or pull a quote. The exceptions are `openings` and `endings`, which read their zone (the first or last 15% of the words) in full: give them the absolute paths of every unit in it.
 
 ## Step 4: Check findings
 

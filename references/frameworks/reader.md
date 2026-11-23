@@ -42,6 +42,7 @@ Read each chapter in full with line numbers. Write one entry per chapter:
   "promises": [
     { "name": "The oath to the duke", "action": "progress", "line": 77, "note": "" }
   ],
+  "present": ["the protagonist", "The rival", "Mara"],
   "characters": [
     { "who": "the protagonist", "beat": "Acts against his belief that he is useless", "line": 201 }
   ],
@@ -70,6 +71,7 @@ Field rules:
 - `threads.type`: `M` milieu (enter or leave a place), `I` inquiry (a question), `C` character (an inner change), `E` event (something wrong in the world that must be fixed).
 - `threads.action`: `open`, `advance`, or `close`.
 - `promises.action`: `made`, `progress`, `paid`, or `dropped` (the book clearly stops caring about it). Promises are what a reader now expects: a setup, a mystery, a skill shown early, a fight that is coming, a relationship that must turn.
+- `present`: every named character who is on the page in this chapter: speaks, acts, or is in the scene. Not characters who are only mentioned or remembered. Use one name per character, the bible name when there is one, the same in every chapter.
 - `characters`: only beats that show what a main character believes, wants, or needs, or a change in it. The protagonist, plus anyone with POV or a bible note.
 - `power.kind`: `gain`, `loss`, `cost`, `reveal` (a new rule of the system). Include skills, resources, allies, gear, standing, and, in a progression story, stats and levels.
 - `genre.kind`: `set piece`, `reward` (a payoff the reader came for: a level up, a win, a loot moment), `system` (HUD, numbers, rules shown), `comedy beat`, `horror beat`, `quiet` (rest and character).

@@ -38,7 +38,7 @@ PLACEHOLDER = "/*ANALYSIS_JSON*/"
 STATUSES = {"ok", "warn", "problem", "missing"}
 SEVERITIES = {"high", "medium"}
 GRADES = {"strong", "mixed", "weak"}
-FRAMEWORK_ORDER = ["structure", "arcs", "promises", "mice", "pacing", "genre", "theme", "opposition"]
+FRAMEWORK_ORDER = ["structure", "arcs", "promises", "mice", "pacing", "genre", "openings", "endings", "theme", "opposition", "cast"]
 SCREEN_FORMS = {"screenplay", "teleplay", "stage play"}
 
 PROJECT_ROOT: Path = Path.cwd()
@@ -256,6 +256,64 @@ def apply_tension(run: Path, frameworks: list[dict]) -> None:
     ] + keep
 
 
+def cast_layer(chapters: list[dict], ledger: dict) -> dict | None:
+    """Who is on the page in each unit, from the readers' `present` lists. No agent; the build measures it."""
+    if not any(ledger.get(c["id"], {}).get("present") for c in chapters):
+        return None
+    total = sum(c["words"] for c in chapters) or 1
+    start, acc = {}, 0
+    for c in chapters:
+        start[c["id"]] = acc / total
+        acc += c["words"]
+    end_of = {c["id"]: start[c["id"]] + c["words"] / total for c in chapters}
+    names: dict[str, str] = {}
+    seen: dict[str, list[str]] = {}
+    for c in chapters:
+        for who in ledger.get(c["id"], {}).get("present") or []:
+            key = who.strip().lower()
+            if not key:
+                continue
+            names.setdefault(key, who.strip())
+            seen.setdefault(key, []).append(c["id"])
+    hero = (CFG.get("protagonist") or "").strip().lower()
+    floor = max(3, round(len(chapters) * 0.05))
+    main = sorted((k for k, ids in seen.items() if len(ids) >= floor or k == hero),
+                  key=lambda k: (k != hero, -len(seen[k]), k))[:12]
+    order = {c["id"]: i for i, c in enumerate(chapters)}
+    spans, marks, gaps = [], [], 0
+    for k in main:
+        ids = sorted(seen[k], key=lambda i: order[i])
+        runs, cur = [], [ids[0]]
+        for a, b in zip(ids, ids[1:]):
+            if order[b] - order[a] <= 2:
+                cur.append(b)
+            else:
+                runs.append(cur)
+                cur = [b]
+        runs.append(cur)
+        row = names[k]
+        for r in runs:
+            spans.append({"row": row, "from": r[0], "to": r[-1], "label": f"{len(r)} {unit_noun()}s" if len(r) > 1 else "",
+                          "status": "ok"})
+        for a, b in zip(ids, ids[1:]):
+            away = start[b] - end_of[a]
+            if away >= 0.15:
+                gaps += 1
+                marks.append({"row": row, "chapter": b, "label": "Back", "status": "warn",
+                              "note": f"Gone for {away:.0%} of the {'script' if is_screen() else 'book'}, since {ch_name(a)}."})
+        tail = 1 - end_of[ids[-1]]
+        if tail >= 0.2 and len(ids) >= floor:
+            gaps += 1
+            marks.append({"row": row, "chapter": ids[-1], "label": "Last seen", "status": "warn",
+                          "note": f"Not on the page for the last {tail:.0%}."})
+    summary = (f"{len(main)} main characters; {gaps} long absence{'' if gaps == 1 else 's'}." if gaps else f"{len(main)} main characters; none goes missing for long.")
+    return {"key": "cast", "name": "Cast presence", "lens": "Characters", "summary": summary,
+            "verdict": summary + " Measured from the readers' notes of who is on the page, not judged by an agent. "
+                       "An absence is flagged when a character is gone for 15% of the words, or leaves for good before the last 20%.",
+            "grade": "strong" if not gaps else "mixed", "rows": [names[k] for k in main],
+            "series": [], "spans": spans, "marks": marks, "findings": []}
+
+
 def merge(run: Path) -> dict:
     chapters_data = load_json(run / "chapters.json")
     frameworks = []
@@ -273,6 +331,9 @@ def merge(run: Path) -> dict:
     ledger_path = run / "ledger.json"
     if ledger_path.exists():
         notes = {e["id"]: e for e in load_json(ledger_path).get("chapters", [])}
+        cast = cast_layer(chapters_data["chapters"], notes)
+        if cast and not any(f.get("key") == "cast" for f in frameworks):
+            frameworks.append(cast)
         for c in chapters_data["chapters"]:
             entry = notes.get(c["id"], {})
             for field in ("summary", "pov"):

@@ -38,3 +38,10 @@ Status: `ok` if the moment is there and earned, `warn` if it is thin or happens 
 - `rows`: one row per character, the protagonist first.
 - One span per character from first appearance to arc end: `label` is the arc type and the Lie, `kind` is `positive`, `negative`, or `flat`.
 - One mark per key moment, on that character's row.
+- One series for the protagonist: `{ "label": "Proactivity", "type": "line", "min": 0, "max": 3, "values": {...}, "notes": {...} }`, one value per chapter they are in:
+  - `0`: things happen to them.
+  - `1`: they react to what happens.
+  - `2`: they choose among options someone else set up.
+  - `3`: they drive events with their own plan or decision.
+
+  `notes` gives one short reason per chapter, for example `"Picks the fight; the squad follows his plan."` A long run of 0 and 1, or a climax at 0 or 1, is worth a finding if it hurts the arc.

@@ -14,6 +14,7 @@
   --heat1: rgba(204, 47, 42, .14); --heat2: rgba(204, 47, 42, .36); --heat3: rgba(204, 47, 42, .62); --heat4: rgba(204, 47, 42, .88);
   --fw-structure: #1f63d6; --fw-arcs: #0d7891; --fw-promises: #0f8a5f; --fw-mice: #8239c9;
   --fw-pacing: #3a4659; --fw-genre: #be2577; --fw-theme: #4f46e5; --fw-opposition: #86651a;
+  --fw-openings: #5f6b0e; --fw-endings: #8a4b2b; --fw-cast: #64748b;
   --fw-x1: #5f6b0e; --fw-x2: #a3304f; --fw-x3: #2f6f6f; --fw-x4: #6a4fb0;
   --font-display: "Chakra Petch", "Segoe UI", system-ui, sans-serif;
   --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
@@ -29,6 +30,7 @@
   --heat1: rgba(240, 100, 92, .16); --heat2: rgba(240, 100, 92, .38); --heat3: rgba(240, 100, 92, .62); --heat4: rgba(240, 100, 92, .88);
   --fw-structure: #6ea2ff; --fw-arcs: #4cc4dd; --fw-promises: #3fcf92; --fw-mice: #b88cf2;
   --fw-pacing: #c3ccda; --fw-genre: #f27ab6; --fw-theme: #9a95ff; --fw-opposition: #d6b35c;
+  --fw-openings: #b9c65a; --fw-endings: #e3a27c; --fw-cast: #a3b1c6;
   --fw-x1: #b9c65a; --fw-x2: #f07f9c; --fw-x3: #6cc2c2; --fw-x4: #a990f0;
   color-scheme: dark;
 } }
@@ -41,6 +43,7 @@
   --heat1: rgba(240, 100, 92, .16); --heat2: rgba(240, 100, 92, .38); --heat3: rgba(240, 100, 92, .62); --heat4: rgba(240, 100, 92, .88);
   --fw-structure: #6ea2ff; --fw-arcs: #4cc4dd; --fw-promises: #3fcf92; --fw-mice: #b88cf2;
   --fw-pacing: #c3ccda; --fw-genre: #f27ab6; --fw-theme: #9a95ff; --fw-opposition: #d6b35c;
+  --fw-openings: #b9c65a; --fw-endings: #e3a27c; --fw-cast: #a3b1c6;
   --fw-x1: #b9c65a; --fw-x2: #f07f9c; --fw-x3: #6cc2c2; --fw-x4: #a990f0;
   color-scheme: dark;
 }
@@ -341,7 +344,7 @@ p.hint.explain { margin: 0 0 2px; }
   CH.forEach(c => { c.w0 = acc; acc += c.words; c.w1 = acc; c.p0 = c.w0 / TOTAL; c.p1 = c.w1 / TOTAL; });
   const FW = D.frameworks;
   const FWK = Object.fromEntries(FW.map(f => [f.key, f]));
-  const KNOWN = ["structure", "arcs", "promises", "mice", "pacing", "genre", "theme", "opposition"];
+  const KNOWN = ["structure", "arcs", "promises", "mice", "pacing", "genre", "theme", "opposition", "openings", "endings", "cast"];
   let extra = 0;
   FW.forEach(f => { f.colorVar = KNOWN.includes(f.key) ? `--fw-${f.key}` : `--fw-x${(extra++ % 4) + 1}`; f.findings = f.findings || []; f.marks = f.marks || []; f.spans = f.spans || []; f.series = f.series || []; f.rows = f.rows || []; });
   const FINDING = {};
@@ -756,6 +759,7 @@ p.hint.explain { margin: 0 0 2px; }
           if (pts.length) parts.push(`<path d="${pts.map((p, k) => (k ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1)).join("")}" fill="none" stroke="${col(f)}" stroke-width="1.8" stroke-linejoin="round"/>`);
           const last = pts[pts.length - 1];
           if (last) parts.push(`<circle cx="${last[0]}" cy="${last[1]}" r="3" fill="${col(f)}"/>`);
+          pts.forEach(p => { const note = s.notes && s.notes[p[2]]; parts.push(`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="transparent" data-tip="${esc(chName(p[2]))}|${esc(s.label)}: ${esc(p[3])}${s.scale_note ? " " + esc(s.scale_note[p[3]] || "") : ""}${note ? " · " + esc(note) : ""}"/>`); });
         }
       }
       if (row.kind === "fwrow") {
@@ -1068,6 +1072,7 @@ p.hint.explain { margin: 0 0 2px; }
       ],
       read: [
         "One row per character. The bar is the arc, labelled with its type and the Lie.",
+        "Proactivity (when the run has it) is how much {{HERO}} drives each {{UNIT}}: 0 things happen to them, 1 reacts, 2 chooses among options set up by others, 3 drives events.",
         "Diamonds are the key moments, colored by whether each one is there and earned.",
       ],
     },
@@ -1135,6 +1140,41 @@ p.hint.explain { margin: 0 0 2px; }
       read: [
         "The Question row runs from where the question is raised to where it is answered.",
         "Each character row shows their answer and the moral decisions that test it.",
+      ],
+    },
+    openings: {
+      by: "Les Edgerton, Hooked; Brandon Sanderson and Nancy Kress on the opening's promise",
+      looks: [
+        "Open on the story-worthy problem, the one the whole {{WORK}} is about, with no warm-up.",
+        "The opening is a contract: it promises a tone, a genre and a kind of story. The {{WORK}} has to keep it.",
+        "The reader needs a reason to follow {{HERO}} before the plot forces it.",
+      ],
+      read: [
+        "Promises runs each promise from the {{UNIT}} that makes it to the {{UNIT}} that keeps or breaks it.",
+        "Opening marks where the real problem shows, where {{HERO}} first shows who they are, and where any warm-up ends.",
+      ],
+    },
+    endings: {
+      by: "Brandon Sanderson's First Law; Robert McKee, Story",
+      looks: [
+        "A power can solve the climax only as far as the reader already understands it.",
+        "The climax answers the central question with an irreversible change, surprising yet inevitable.",
+        "A first {{WORK}} in a series closes its own question and may carry the series' question forward.",
+      ],
+      read: [
+        "Climax means runs each power, ally or object that decides the climax from its setup to the climax. Red means it was never set up.",
+        "Left open sorts what is still open at the end: dashed bars are series hooks, red bars are loose ends.",
+      ],
+    },
+    cast: {
+      by: "Measured from the readers' notes",
+      looks: [
+        "Which characters appear in each {{UNIT}}, and how long each one is gone.",
+        "A main character who vanishes for a long stretch makes the reader forget them, or wonder where they went.",
+      ],
+      read: [
+        "One row per character. Bars are stretches where they appear; gaps are absences.",
+        "Amber marks a return after a long absence. Red marks a character's last appearance well before the end.",
       ],
     },
     opposition: {

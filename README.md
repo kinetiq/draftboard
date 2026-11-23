@@ -13,6 +13,8 @@ Draftboard is a plugin for [Claude Code](https://claude.com/claude-code). Point 
 | Value shifts (Story Grid) | Does every chapter or scene turn something? Where does it sag? |
 | Genre contract | Does it deliver what its genre promises? |
 
+Four more are offered when your work fits them: **Openings** (does page one start on the real problem, and does the opening promise the book you wrote?), **Endings** (is the climax won with means the reader already understood, and what is left hanging?), **Theme** (Truby's moral argument) and **Opposition** (Truby's opponent web). Draftboard also charts **cast presence**, who is on the page in each chapter and who goes missing, measured from the readers' notes at no extra cost.
+
 Then it shows you **where the frameworks agree**, because a problem that three frameworks find independently is the one to fix first.
 
 You get:
