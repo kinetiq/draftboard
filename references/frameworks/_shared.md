@@ -33,7 +33,7 @@ The composer gives you absolute paths to:
 - The book folder. Open chapters to check a claim or pull a quote. Do not reread the whole book.
 - Any `context` files in `draftboard.json` (character lists, clock lists, per-unit notes). Use them for names and facts when they exist; they are optional.
 
-**Positions.** Use word count for position, not chapter number. Chapter lengths vary. Compute a chapter's position as the words before it divided by total words. A beat "at 25%" means 25% of the words in.
+**Positions.** Use word count for position, not chapter number. Chapter lengths vary. Compute a chapter's position as the words before it divided by total words. A beat "at 25%" means 25% of the words in. In notes, write a position as words a reader can follow ("at 20% of the book"), never a bare "(20%)". The explorer already shows where each beat starts and its target, so mention a position only when it is the point.
 
 ## Quotes
 
