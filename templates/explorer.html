@@ -93,7 +93,7 @@ svg#map text { fill: var(--fg); }
 svg#map .t-muted { fill: var(--muted); }
 svg#map .t-faint { fill: var(--faint); }
 svg#map .lane-label { cursor: pointer; }
-svg#map [data-tip], svg#map [data-finding] { cursor: pointer; }
+svg#map [data-tip], svg#map [data-finding], svg#map [data-span] { cursor: pointer; }
 
 .tip {
   position: fixed; z-index: 20; pointer-events: none; max-width: 320px; background: var(--fg); color: var(--bg);
@@ -239,6 +239,8 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
 .row:hover { background: var(--sunken); }
 .row.on { background: var(--accent-soft); }
 .row-main { display: grid; gap: 1px; min-width: 0; }
+.row-main .sub.explain, p.hint.explain { font-style: italic; }
+p.hint.explain { margin: 0 0 2px; }
 .cnt { font: 600 13px var(--font-mono); min-width: 22px; text-align: center; color: var(--problem); }
 .chip.warn-chip { color: var(--warn); border-color: var(--warn); }
 .chip.s-fixed { color: var(--ok); border-color: var(--ok); }
@@ -774,7 +776,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
           }
           const dash = s.kind === "carried" || s.to == null ? 'stroke-dasharray="4 3"' : "";
           const rel = relatedFor(f, s)[0];
-          parts.push(`<rect x="${xa}" y="${ly}" width="${w}" height="14" rx="3" fill="${fill}" fill-opacity="${fop}" stroke="${stroke}" stroke-width="1" ${dash} ${rel ? `data-finding="${esc(rel.id)}"` : ""} data-tip="${esc(s.label)}|${esc(chName(s.from))} to ${s.to == null ? "still open" : esc(chName(s.to))}${s.status && s.status !== "ok" ? " · " + esc(s.status) : ""}${explainBits(f, s).map(t => " · " + esc(t)).join("")}${s.note ? " · " + esc(s.note) : ""}${rel ? " · Click for " + esc(rel.id) + ": " + esc(rel.title) : ""}"/>`);
+          parts.push(`<rect x="${xa}" y="${ly}" width="${w}" height="14" rx="3" fill="${fill}" fill-opacity="${fop}" stroke="${stroke}" stroke-width="1" ${dash} data-span="${esc(f.key)}:${f.spans.indexOf(s)}" data-tip="${esc(s.label)}|${esc(chName(s.from))} to ${s.to == null ? "still open" : esc(chName(s.to))}${s.status && s.status !== "ok" ? " · " + esc(s.status) : ""}${explainBits(f, s).map(t => " · " + esc(t)).join("")}${s.note ? " · " + esc(s.note) : ""} · Click to open it"/>`);
           const lbl = (s.kind && s.kind.length <= 2 ? s.kind + " · " : "") + (s.label || "");
           const fit = Math.floor((w - 10) / 6.2);
           if (fit >= 4) parts.push(`<text x="${xa + 5}" y="${ly + 10.5}" font-size="10.5" pointer-events="none">${esc(lbl.length > fit ? lbl.slice(0, fit - 1) + "…" : lbl)}</text>`);
@@ -859,6 +861,8 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
   svg.addEventListener("click", e => {
     const tg = e.target.closest("[data-toggle]");
     if (tg) { toggleFw(tg.dataset.toggle); return; }
+    const sp = e.target.closest("[data-span]");
+    if (sp) { select(spanSel(sp.dataset.span)); return; }
     const fd = e.target.closest("[data-finding]");
     if (fd) { select({ t: "finding", id: fd.dataset.finding }); return; }
     const id = chapterAt(svgX(e));
@@ -866,11 +870,13 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
   });
   function toggleFw(k) { state.hidden.has(k) ? state.hidden.delete(k) : state.hidden.add(k); drawMap(); renderSide(true); renderFocus(); }
 
+  const spanSel = key => { const [fw, i] = key.split(":"); return { t: "span", fw, i: +i, key }; };
+  const spanRange = (s2) => { const a = IDX[s2.from], b = s2.to == null ? CH.length - 1 : IDX[s2.to]; return a == null || b == null ? [] : CH.slice(a, b + 1).map(c => c.id); };
   function setSel(sel) {
     state.sel = sel;
     state.finding = sel && sel.t === "finding" ? sel.id : null;
     state.chapter = sel && sel.t === "chapter" ? sel.id : null;
-    state.hl = !sel ? [] : sel.t === "finding" ? FINDING[sel.id].chapters : sel.t === "conv" ? (CONV[sel.id].chapters || []) : sel.t === "cluster" ? sel.chapters : [];
+    state.hl = !sel ? [] : sel.t === "finding" ? FINDING[sel.id].chapters : sel.t === "conv" ? (CONV[sel.id].chapters || []) : sel.t === "cluster" ? sel.chapters : sel.t === "span" ? spanRange(FWK[sel.fw].spans[sel.i]) : [];
     if (sel && sel.t === "chapter") state.stripCh = sel.id;
     else if (sel && !state.hl.includes(state.stripCh)) state.stripCh = null;
   }
@@ -1295,7 +1301,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
     if (mode.fw) {
       const f = mode.fw;
       const spans = f.spans.map(s => ({ s, a: IDX[s.from], b: s.to == null ? CH.length - 1 : IDX[s.to] }))
-        .filter(it => it.a != null && it.b != null && it.b >= lo && it.a <= hi)
+        .filter(it => it.a != null && it.b != null && it.b >= lo && it.a <= hi && (!mode.row || it.s.row === mode.row))
         .filter(it => mode.all || it.a >= lo || (it.s.to != null && it.b <= hi) || (it.s.status && it.s.status !== "ok"))
         .slice(0, mode.all ? 16 : 10)
         .map(it => ({ ...it, a: Math.max(it.a, lo), b: Math.min(it.b, hi) }));
@@ -1307,7 +1313,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
         if (fit >= 4) parts.push(`<text x="${xa + 4}" y="${ly + 9.5}" font-size="9.5" pointer-events="none">${esc(t.length > fit ? t.slice(0, fit - 1) + "…" : t)}</text>`);
       });
       if (spans.length) y += p.count * 17 + 4;
-      const marks = f.marks.filter(mk => { const i = IDX[mk.chapter]; return i != null && i >= lo && i <= hi; });
+      const marks = f.marks.filter(mk => { const i = IDX[mk.chapter]; return i != null && i >= lo && i <= hi && (!mode.row || mk.row === mode.row); });
       if (marks.length) {
         let le = -1e9;
         marks.map(mk => ({ mk, x: xm(IDX[mk.chapter]) })).sort((a, b) => a.x - b.x).forEach(({ mk, x }) => {
@@ -1392,7 +1398,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
       const where = s2.from === id ? "opens here" : s2.to === id ? "closes here" : "running";
       const flagged = s2.status && s2.status !== "ok";
       const showNote = s2.note && (flagged || where !== "running");
-      const line = `<div class="ch-line${where === "running" && !flagged ? " run" : ""}"><span class="k">${esc(s2.row)}</span><span>${esc(s2.label)} <span class="muted">· ${where}</span>${flagged ? ` <span class="st ${esc(s2.status)}">${esc(s2.status)}</span>` : ""}${where !== "running" || flagged ? explain(s2) : ""}${showNote ? `<span class="note">${esc(s2.note)}</span>` : ""}${relatedLinks(f, s2)}</span></div>`;
+      const line = `<div class="ch-line${where === "running" && !flagged ? " run" : ""}"><span class="k">${esc(s2.row)}</span><span><button class="linkish" data-sel-span="${esc(f.key)}:${f.spans.indexOf(s2)}">${esc(s2.label)}</button> <span class="muted">· ${where}</span>${flagged ? ` <span class="st ${esc(s2.status)}">${esc(s2.status)}</span>` : ""}${where !== "running" || flagged ? explain(s2) : ""}${showNote ? `<span class="note">${esc(s2.note)}</span>` : ""}${relatedLinks(f, s2)}</span></div>`;
       (where === "running" ? running : lines).push(line);
     });
     return lines.concat(running);
@@ -1464,6 +1470,28 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
       ${x.suggestion ? `<div><div class="label">Suggestion</div><p class="sugg">${esc(x.suggestion)}</p></div>` : ""}`;
   }
 
+  function focusSpan(sel) {
+    const f = FWK[sel.fw], s2 = f && f.spans[sel.i];
+    if (!s2) return `<p class="empty">Not found.</p>`;
+    const ids = spanRange(s2), a = IDX[s2.from], b = s2.to == null ? CH.length - 1 : IDX[s2.to];
+    const st = s2.status || "ok";
+    const what = { arcs: "Character arc", mice: "Thread", promises: "Promise", pacing: "Stretch", structure: "Beat span" }[f.key] || "Span";
+    const beats = f.marks.filter(mk => mk.row === s2.row && IDX[mk.chapter] >= a && IDX[mk.chapter] <= b)
+      .sort((x, y) => IDX[x.chapter] - IDX[y.chapter]);
+    const rel = relatedFor(f, s2);
+    const bits = explainBits(f, s2);
+    return `<div class="focus-head"><div><div class="kicker"><span class="dot" style="background:${col(f)}"></span>${esc(what)} · ${esc(s2.row)}</div><h2>${esc(s2.label)}</h2></div>${X_BTN}</div>
+      <div class="meta"><span>${esc(chName(s2.from))} to ${s2.to == null ? "still open at the end" : esc(chName(s2.to))}</span><span>${pct(CH[a].p0)}–${pct(CH[b].p1)}</span>${st !== "ok" ? `<span class="st ${esc(st)}">${esc(st)}</span>` : ""}${state.view !== f.key ? `<button class="linkish" data-go="${esc(f.key)}">Open the ${esc(f.name)} tab</button>` : ""}</div>
+      ${miniMap(ids, { fw: f, row: s2.row, all: true, pad: 1 })}
+      ${bits.length ? `<div>${bits.map(t => `<p class="hint explain">${esc(t)}</p>`).join("")}</div>` : ""}
+      ${s2.note ? `<p class="lede sm">${esc(s2.note)}</p>` : ""}
+      ${beats.length ? `<div><div class="label">Along the way · ${beats.length}</div><div class="rows">${beats.map(mk => {
+        const ms = mk.status || "ok", kd = kindText(f, mk);
+        return `<button class="row" data-sel-chapter="${esc(mk.chapter)}">${DIAMOND(stColor(f, ms), ms === "missing")}<span class="row-main"><span class="ttl">${esc(chName(mk.chapter))} · ${esc(mk.label)}</span>${kd ? `<span class="sub explain">${esc(kd)}</span>` : ""}${mk.note ? `<span class="sub">${esc(markNote(mk.note))}</span>` : ""}</span>${ms !== "ok" ? `<span class="st ${esc(ms)}">${esc(ms)}</span>` : "<span></span>"}</button>`;
+      }).join("")}</div></div>` : ""}
+      ${rel.length ? `<div><div class="label">Findings about it</div><div class="rows">${rel.map(x => findingRow(x, false)).join("")}</div></div>` : ""}`;
+  }
+
   function focusConv(c) {
     const fs = (c.findings || []).map(id => FINDING[id]).filter(Boolean);
     const keys = [...new Set(fs.map(x => x.fw))];
@@ -1493,13 +1521,15 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
     else if (s2.t === "finding") el.innerHTML = focusFinding(FINDING[s2.id]);
     else if (s2.t === "conv") el.innerHTML = focusConv(CONV[s2.id]);
     else if (s2.t === "cluster") el.innerHTML = focusCluster(s2);
+    else if (s2.t === "span") el.innerHTML = focusSpan(s2);
   }
   $("focus").addEventListener("click", e => {
-    const t = e.target.closest("[data-clear],[data-copy],[data-sel-finding],[data-sel-chapter],[data-sel-conv],[data-go]"); if (!t) return;
+    const t = e.target.closest("[data-clear],[data-copy],[data-sel-finding],[data-sel-span],[data-sel-chapter],[data-sel-conv],[data-go]"); if (!t) return;
     const d = t.dataset;
     if ("clear" in d) return select(null);
     if (d.copy) return copy(t);
     if (d.selFinding) return select({ t: "finding", id: d.selFinding });
+    if (d.selSpan) return select(spanSel(d.selSpan));
     if (d.selChapter) return select({ t: "chapter", id: d.selChapter });
     if (d.selConv) return select({ t: "conv", id: d.selConv });
     if (d.go) go(d.go);
@@ -1541,7 +1571,7 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
       return `<button class="tl-e" data-sel-chapter="${esc(mk.chapter)}">${DIAMOND(stColor(f, st), st === "missing")}<span class="tl-t"><span>${esc(mk.label)}</span>${ex ? `<span class="sub explain">${esc(ex)}</span>` : ""}${mk.note ? `<span class="sub">${esc(markNote(mk.note))}</span>` : ""}</span><span class="tl-row">${esc(mk.row)}</span>${st !== "ok" ? `<span class="st ${esc(st)}">${esc(st)}</span>` : "<span></span>"}</button>`;
     }
     const s = e.s, st = s.status || "ok", open = e.k === "open";
-    return `<button class="tl-e" data-sel-chapter="${esc(open ? s.from : s.to)}"><span class="br" style="color:${stColor(f, st)}">${open ? "[" : "]"}</span><span class="tl-t"><span><span class="muted">${open ? "Opens" : "Closes"}:</span> ${esc(s.label)}</span>${open ? `<span class="sub">${s.to == null ? "still open at the end" : "until " + esc(chName(s.to))}</span>` : ""}${open && (kindText(f, s) || targetText(s)) ? `<span class="sub explain">${esc([kindText(f, s), targetText(s)].filter(Boolean).join(" "))}</span>` : ""}</span><span class="tl-row">${esc(s.row)}</span>${open && st !== "ok" ? `<span class="st ${esc(st)}">${esc(st)}</span>` : "<span></span>"}</button>`;
+    return `<button class="tl-e" data-sel-span="${esc(f.key)}:${f.spans.indexOf(s)}"><span class="br" style="color:${stColor(f, st)}">${open ? "[" : "]"}</span><span class="tl-t"><span><span class="muted">${open ? "Opens" : "Closes"}:</span> ${esc(s.label)}</span>${open ? `<span class="sub">${s.to == null ? "still open at the end" : "until " + esc(chName(s.to))}</span>` : ""}${open && (kindText(f, s) || targetText(s)) ? `<span class="sub explain">${esc([kindText(f, s), targetText(s)].filter(Boolean).join(" "))}</span>` : ""}</span><span class="tl-row">${esc(s.row)}</span>${open && st !== "ok" ? `<span class="st ${esc(st)}">${esc(st)}</span>` : "<span></span>"}</button>`;
   }
 
   function priorityHTML(key, highOnly) {
@@ -1642,11 +1672,12 @@ select { font: inherit; font-size: 12px; color: var(--fg); background: var(--sur
     if (keepScroll) $("side-body").scrollTop = sc;
   }
   $("side").addEventListener("click", e => {
-    const t = e.target.closest("[data-side],[data-sel-finding],[data-sel-chapter],[data-sel-conv],[data-sel-cluster],[data-fwchip],[data-min],[data-sev],[data-pair],[data-reset]");
+    const t = e.target.closest("[data-side],[data-sel-finding],[data-sel-span],[data-sel-chapter],[data-sel-conv],[data-sel-cluster],[data-fwchip],[data-min],[data-sev],[data-pair],[data-reset]");
     if (!t) return;
     const d = t.dataset;
     if (d.side) { if (state.view === "all") state.sideAll = d.side; else state.sideFw = d.side; renderSide(); return; }
     if (d.selFinding) return select({ t: "finding", id: d.selFinding }, true);
+    if (d.selSpan) return select(spanSel(d.selSpan), true);
     if (d.selChapter) return select({ t: "chapter", id: d.selChapter }, true);
     if (d.selConv) return select({ t: "conv", id: d.selConv }, true);
     if (d.selCluster) { const k = clusters().find(k => k.key === d.selCluster); if (k) select(k, true); return; }
