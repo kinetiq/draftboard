@@ -87,6 +87,7 @@ header { display: grid; gap: 8px; }
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
 .seg button { border: 0; background: transparent; padding: 3px 9px; font-size: 12px; }
 .seg button[aria-pressed="true"] { background: var(--sunken); color: var(--fg); font-weight: 600; }
+.seg button:disabled { opacity: .4; cursor: default; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 2px 14px 10px; font-size: 12px; color: var(--muted); }
 .legend span { display: inline-flex; align-items: center; gap: 6px; }
 .sw { width: 14px; height: 10px; border-radius: 2px; display: inline-block; }
@@ -423,9 +424,8 @@ p.hint.explain { margin: 0 0 2px; }
     agreeMin: 2,
     flowInfo: false,
     ref: true,
-    closed: false,
   };
-  const vis = x => state.closed || !isClosed(x);
+  const vis = x => state.sev === "closed" ? isClosed(x) : !isClosed(x);
   // #ch-24 opens a {{UNIT}} on All frameworks; #pacing-ch-24 opens it on a framework tab; #pacing opens a tab.
   function parseHash() {
     const h = decodeURIComponent(location.hash.slice(1));
@@ -506,17 +506,17 @@ p.hint.explain { margin: 0 0 2px; }
       <button class="info" id="flow-info" aria-expanded="${state.flowInfo ? "true" : "false"}" title="What does this curve mean?">?</button>
       <div class="pop" id="flow-pop" ${state.flowInfo ? "" : "hidden"}>${flowInfoHTML()}</div>`;
   }
-  function closedToggle() {
-    return N_CLOSED ? `<label class="check"><input type="checkbox" id="closed-toggle" ${state.closed ? "checked" : ""}> Show closed (${N_CLOSED})</label>` : "";
+  function findingFilter() {
+    return `<span>Findings</span><span class="seg">
+        <button data-sev="all" aria-pressed="${state.sev === "all"}">All</button>
+        <button data-sev="high" aria-pressed="${state.sev === "high"}">High only</button>
+        <button data-sev="closed" aria-pressed="${state.sev === "closed"}" ${N_CLOSED ? "" : 'disabled title="Nothing is marked closed yet"'}>Closed only${N_CLOSED ? ` (${N_CLOSED})` : ""}</button></span>`;
   }
   function renderControls() {
     renderAbout();
     if (state.view === "all") {
       $("stage-title").textContent = "Where the frameworks flag the {{WORK}}";
-      $("controls").innerHTML = `<span>Severity</span><span class="seg">
-        <button data-sev="all" aria-pressed="${state.sev === "all"}">All</button>
-        <button data-sev="high" aria-pressed="${state.sev === "high"}">High only</button></span>
-        ${closedToggle()}${flowControls()}`;
+      $("controls").innerHTML = findingFilter() + flowControls();
       $("legend").innerHTML = `
         <span><i class="sw" style="background:var(${SPINE ? SPINE.fw.colorVar : "--muted"});opacity:.5"></i>${esc(SPINE ? SPINE.s.label : "")} (top curve)${overlayFor() ? ", dashed line = peak" : ""}</span>
         ${overlayFor() ? `<span><i class="sw" style="background:var(--ok);opacity:.25"></i>Reference band; amber and red ticks mark {{UNITS}} below or above it</span>` : ""}
@@ -527,7 +527,7 @@ p.hint.explain { margin: 0 0 2px; }
     } else {
       const f = FWK[state.view];
       $("stage-title").innerHTML = `<span class="dot" style="background:${col(f)};margin-right:8px"></span>${esc(f.name)}${f.lens ? ` <span class="muted" style="font-weight:500">· ${esc(f.lens)}</span>` : ""}`;
-      $("controls").innerHTML = closedToggle() + flowControls();
+      $("controls").innerHTML = findingFilter() + flowControls();
       $("legend").innerHTML = `
         <span><svg width="12" height="12"><path d="M6 1 11 6 6 11 1 6Z" fill="${col(f)}"/></svg>On track</span>
         <span><svg width="12" height="12"><path d="M6 1 11 6 6 11 1 6Z" fill="var(--warn)"/></svg>Off or thin</span>
@@ -540,7 +540,6 @@ p.hint.explain { margin: 0 0 2px; }
   }
   $("controls").addEventListener("change", e => {
     if (e.target.id === "ref-toggle") { state.ref = e.target.checked; drawMap(); return; }
-    if (e.target.id === "closed-toggle") { state.closed = e.target.checked; drawMap(); renderStrip(); renderSide(true); renderFocus(); return; }
     if (e.target.id !== "flow-pick") return;
     setFlow(e.target.value); renderControls(); drawMap(); renderFocus();
   });
@@ -552,13 +551,13 @@ p.hint.explain { margin: 0 0 2px; }
   $("controls").addEventListener("click", e => {
     if (e.target.closest("#flow-info")) { state.flowInfo = !state.flowInfo; renderControls(); return; }
     const b = e.target.closest("[data-sev]"); if (!b) return;
-    state.sev = b.dataset.sev; renderControls(); drawMap(); renderSide(true); renderFocus();
+    state.sev = b.dataset.sev; renderControls(); drawMap(); renderStrip(); renderSide(true); renderFocus();
   });
 
   // ---------- map ----------
   const GUT = 150, PAD_R = 14;
   let G = null; // geometry of last draw
-  const sevOk = x => vis(x) && (state.sev === "all" || x.severity === "high");
+  const sevOk = x => vis(x) && (state.sev !== "high" || x.severity === "high");
   const visibleFW = () => FW.filter(f => !state.hidden.has(f.key));
 
   function pack(items) { // items: {a, b} {{UNIT}} index range; returns lane index per item
@@ -1619,14 +1618,15 @@ p.hint.explain { margin: 0 0 2px; }
     let list = key ? FWK[key].findings : FW.flatMap(f => f.findings).slice().sort((a, b) => order[a.severity] - order[b.severity] || FW.indexOf(FWK[a.fw]) - FW.indexOf(FWK[b.fw]));
     list = list.filter(vis);
     if (highOnly) list = list.filter(x => x.severity === "high");
-    if (highOnly && !list.length) return `<p class="empty">No high findings.</p>`;
-    return list.length ? `<div class="rows">${list.map(x => findingRow(x, !key)).join("")}</div>` : `<p class="empty">No findings.</p>`;
+    if (state.sev === "high") list = list.filter(x => x.severity === "high");
+    if (!list.length) return `<p class="empty">${state.sev === "closed" ? "No closed findings here." : highOnly || state.sev === "high" ? "No high findings." : "No findings."}</p>`;
+    return `<div class="rows">${list.map(x => findingRow(x, !key)).join("")}</div>`;
   }
 
   function agreeHTML() {
     const all = D.convergence || [], conv = all.filter(vis);
     if (!all.length) return `<p class="empty">The composer found no shared causes across frameworks.</p>`;
-    if (!conv.length) return `<p class="empty">All ${all.length} are closed. Turn on Show closed to see them.</p>`;
+    if (!conv.length) return `<p class="empty">${state.sev === "closed" ? "None of these is closed yet." : `All ${all.length} are closed. Choose Closed only to see them.`}</p>`;
     return `<p class="side-note">Findings from different frameworks that the composer traced to one cause. Ranked by how much a fix helps.</p>
       <div class="rows">${conv.map(c => {
         const keys = [...new Set((c.findings || []).map(id => FINDING[id]?.fw).filter(Boolean))];
@@ -1723,7 +1723,7 @@ p.hint.explain { margin: 0 0 2px; }
     if (d.selCluster) { const k = clusters().find(k => k.key === d.selCluster); if (k) select(k, true); return; }
     if (d.fwchip) return toggleFw(d.fwchip);
     if (d.min) { state.agreeMin = +d.min; drawMap(); renderSide(true); return; }
-    if (d.sev) { state.sev = d.sev; renderControls(); drawMap(); renderSide(true); renderFocus(); return; }
+    if (d.sev) { state.sev = d.sev; renderControls(); drawMap(); renderStrip(); renderSide(true); renderFocus(); return; }
     if (d.pair) { const [a, b] = d.pair.split(","); state.hidden = new Set(FW.map(f => f.key).filter(k => k !== a && k !== b)); state.agreeMin = 2; drawMap(); renderSide(true); renderFocus(); return; }
     if ("reset" in d) { state.hidden.clear(); state.agreeMin = 2; drawMap(); renderSide(true); renderFocus(); }
   });
