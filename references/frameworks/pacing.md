@@ -25,13 +25,20 @@ From the ledger `scenes` (confirmed against chapters where they look wrong) and 
 5. **Ending.** Does the climax chapter hold the book's highest tension? Does the falling action stay short?
 6. **Too much tension.** Runs of 4 or more chapters, or more than about 8% of the words, at 7 or above with no chapter at 5 or below. Readers go numb, and later peaks lose force because nothing sits below them. Also flag a book whose average tension is above 6: the climax has no room to rise.
 7. **Too little for too long.** Runs of more than about 10% of the words at 3 or below outside the opening and the denouement.
+8. **Punch and counterpunch.** In the middle of the book (roughly 20% to 85%), the protagonist and the opposition should trade blows: each turn caused by the last, alternating who throws it. From the ledger scenes' `cause` and `link`, flag:
+   - **"And then" stretches:** 3 or more turns in a row linked by `and then`. The events don't push each other, so the middle reads as episodic even when every scene turns.
+   - **Only taking hits:** 4 or more turns in a row, or about 8% of the words, where nothing is caused by the `hero`. The protagonist reacts and never punches back.
+   - **No counterpunch:** a similar stretch with nothing caused by the `opposition`. The protagonist wins too easily.
+
+   Check the ledger's labels against the text before you file one; readers judge `link` scene by scene and can miss a cause set up chapters earlier.
 
 Too much and too little are both findings. Name which one in the title.
 
 ## What to draw
 
-- `rows`: `["Turns", "Sags"]`.
+- `rows`: `["Turns", "Sags", "Trading blows"]`.
 - One series: `{ "label": "Value shift", "type": "bars", "min": -3, "max": 3, "values": {...} }`.
 - Do not output Tension or Peak tension series. The build script adds both from `tension.json`, with the tension agent's reasons, so the curve on the map is exactly what the tension agent scored.
 - A mark on `Turns` for each turning point: `label` names the value and direction, such as "Hope → despair".
 - A span on `Sags` for each sag, `status: "warn"` or `"problem"`.
+- A span on `Trading blows` for each flagged stretch, labelled with which kind ("And then", "Only taking hits", "No counterpunch"), `status: "warn"` or `"problem"`, with a `note` naming the turns. Leave the row empty if the middle trades blows well, and say so in the verdict.

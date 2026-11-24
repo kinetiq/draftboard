@@ -33,7 +33,9 @@ Read each chapter in full with line numbers. Write one entry per chapter:
       "turn": "What changes it",
       "value": "life / death",
       "shift": -2,
-      "line": 118
+      "line": 118,
+      "cause": "opposition",
+      "link": "but"
     }
   ],
   "threads": [
@@ -68,6 +70,8 @@ Field rules:
 
 - Do not score tension. A separate tension agent scores every chapter on a fixed scale after you finish (`tension.md`). Your `scenes`, `summary` and quotes are its main input, so get the scene line ranges right.
 - `scenes`: one per scene. `value` is what is at stake, as a pair: life / death, free / trapped, trust / betrayal, hope / despair. `shift` is -3 to +3, from the POV character's side, start of scene to end. 0 means nothing turned. `line` is where it turns.
+  - `cause`: who turned it. `hero` (the POV character's own action or decision), `opposition` (an antagonist or opposing force acting), or `other` (chance, an ally, the world, a revelation nobody caused). Leave it out when nothing turned.
+  - `link`: how this turn connects to the turn before it, in this chapter or the last scene of the previous one. `therefore` (it follows from that turn), `but` (it answers or reverses that turn), or `and then` (it would happen even if the earlier turn hadn't). The first scene of the book has none.
 - `threads.type`: `M` milieu (enter or leave a place), `I` inquiry (a question), `C` character (an inner change), `E` event (something wrong in the world that must be fixed).
 - `threads.action`: `open`, `advance`, or `close`.
 - `promises.action`: `made`, `progress`, `paid`, or `dropped` (the book clearly stops caring about it). Promises are what a reader now expects: a setup, a mystery, a skill shown early, a fight that is coming, a relationship that must turn.

@@ -225,6 +225,7 @@ blockquote .ref { font: 12px var(--font-mono); color: var(--muted); grid-column:
 .turn-net, .turn { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; align-items: start; font-size: 13px; }
 .turn-net .tt-num { border-color: var(--muted); }
 .turns .note { display: block; color: var(--muted); font-size: 12px; }
+.turn-tag { display: inline-block; margin-left: 6px; font: 500 10.5px var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 0 4px; }
 .side-head .seg { flex-wrap: wrap; }
 .focus { overflow: auto; align-content: start; }
 .side { display: flex; flex-direction: column; padding: 0; gap: 0; overflow: hidden; }
@@ -1021,6 +1022,8 @@ p.hint.explain { margin: 0 0 2px; }
     }
     return `<rect x="${xm(i) - w / 2}" y="${Math.min(yy, z)}" width="${w}" height="${Math.abs(yy - z)}" fill="${v > 0 ? "var(--pos)" : "var(--neg)"}" fill-opacity=".75" pointer-events="none"/>` + hit;
   }
+  const CAUSE = { hero: "{{HERO}}'s move", opposition: "the opposition's move", other: "neither side" };
+  const turnTag = x => { const b = [x.link, CAUSE[x.cause]].filter(Boolean); return b.length ? `<span class="turn-tag">${esc(b.join(" · "))}</span>` : ""; };
   function shiftTip(id) {
     const c = CH[IDX[id]], v = VSHIFT.values[id], sc = c.scenes || [];
     const sum = sc.reduce((a, x) => a + (x.shift || 0), 0);
@@ -1032,7 +1035,7 @@ p.hint.explain { margin: 0 0 2px; }
     if (flat && zeroKind(id) !== "none") notes.push(`${flat} scene${flat > 1 ? "s" : ""} here turn${flat > 1 ? "" : "s"} nothing.`);
     return `<div class="tt-title">${esc(chName(id))}${c.title === chName(id) ? "" : " · " + esc(c.title)}</div>
       <div class="tt-row"><span class="tt-num">${fmtShift(v)}</span><span><b>Value shift</b> · ${esc(shiftWord(v))}</span></div>
-      ${sc.map(x => `<div class="tt-scene"><span class="tt-sgn ${x.shift > 0 ? "up" : x.shift < 0 ? "down" : "flat"}">${fmtShift(x.shift || 0)}</span><span><i>${esc(x.value || "")}</i> · ${esc(x.turn || "")}${x.goal ? `<span class="tt-why">Wanted: ${esc(x.goal)}</span>` : ""}</span></div>`).join("")}
+      ${sc.map(x => `<div class="tt-scene"><span class="tt-sgn ${x.shift > 0 ? "up" : x.shift < 0 ? "down" : "flat"}">${fmtShift(x.shift || 0)}</span><span><i>${esc(x.value || "")}</i> · ${esc(x.turn || "")}${turnTag(x)}${x.goal ? `<span class="tt-why">Wanted: ${esc(x.goal)}</span>` : ""}</span></div>`).join("")}
       ${notes.length ? `<div class="tt-gap">${notes.map(esc).join(" ")}</div>` : ""}
       <div class="tt-foot">A value is what is at stake for {{HERO}}: life / death, free / trapped, hope / despair. Each scene scores how far it moved from start to end: ±1 a nudge, ±2 a clear turn, ±3 a major reversal; + is better for him, − is worse. The bar is the scenes added up. Direction is not quality.</div>`;
   }
@@ -1127,12 +1130,14 @@ p.hint.explain { margin: 0 0 2px; }
         "Every scene should move a value from where it started. That movement is the shift: positive if things got better for {{HERO}}, negative if worse, scored from −3 to +3.",
         "A scene that moves nothing is not doing its job yet, however much happens in it. Runs all one direction, and big swings undone by the next {{UNIT}}, flatten the story.",
         "Tension is a separate measure: how much pressure the reader feels. A {{UNIT}} can be tense and still end where it started.",
+        "Punch and counterpunch: in the middle, {{HERO}} and the opposition should trade blows, each turn caused by the one before. 'And then' turns read as episodic; a long run with no move by {{HERO}} reads as passive.",
       ],
       read: [
         "The Tension curve is the spine of the map: 0 is rest, 10 is the climax. The dashed line is the peak inside each {{UNIT}}.",
         "Value shift bars: green up, red down, height is how far. Hover one to see the scenes behind it.",
         "A hollow circle on the zero line is a {{UNIT}} that ends where it started.",
         "Spans on the Sags row mark flat stretches. Diamonds on Turns mark the biggest swings.",
+        "Each scene's turn is tagged with how it links to the one before (therefore, but, and then) and whose move caused it. Spans on the Trading blows row flag stretches that stop trading blows.",
       ],
     },
     genre: {
@@ -1487,7 +1492,7 @@ p.hint.explain { margin: 0 0 2px; }
     const k = zeroKind(id);
     return `<div class="turns"><div class="label">Turns in this chapter</div>
       <div class="turn-net"><span class="tt-num">${fmtShift(v)}</span><span><b>${esc(shiftWord(v))}</b>${k === "cancel" ? `<span class="note">Ends where it started: the scenes cancel out.</span>` : k === "none" ? `<span class="note">Nothing turned.</span>` : ""}</span></div>
-      ${sc.map(x => `<div class="turn"><span class="tt-sgn ${x.shift > 0 ? "up" : x.shift < 0 ? "down" : "flat"}">${fmtShift(x.shift || 0)}</span><span><i>${esc(x.value || "")}</i> · ${esc(x.turn || "")}${x.goal ? `<span class="note">Wanted: ${esc(x.goal)}</span>` : ""}</span></div>`).join("")}
+      ${sc.map(x => `<div class="turn"><span class="tt-sgn ${x.shift > 0 ? "up" : x.shift < 0 ? "down" : "flat"}">${fmtShift(x.shift || 0)}</span><span><i>${esc(x.value || "")}</i> · ${esc(x.turn || "")}${turnTag(x)}${x.goal ? `<span class="note">Wanted: ${esc(x.goal)}</span>` : ""}</span></div>`).join("")}
     </div>`;
   }
 

@@ -340,7 +340,7 @@ def merge(run: Path) -> dict:
                 if entry.get(field):
                     c[field] = entry[field]
             if entry.get("scenes"):
-                c["scenes"] = [{k: s.get(k) for k in ("value", "shift", "goal", "turn", "line")}
+                c["scenes"] = [{k: s.get(k) for k in ("value", "shift", "goal", "turn", "line", "cause", "link")}
                                for s in entry["scenes"]]
     book = chapters_data.get("book", "")
     analysis = {
@@ -569,6 +569,16 @@ def notes_block(notes: str) -> list[str]:
             NOTES_START] + ([notes] if notes.strip() else []) + [NOTES_END, ""]
 
 
+CAUSE_WORDS = {"hero": "{hero}'s move", "opposition": "the opposition's move", "other": "neither side"}
+
+
+def turn_tag(s: dict) -> str:
+    """' · <link> · <who turned it>' for a scene line, when the reader recorded them."""
+    who = CAUSE_WORDS.get(s.get("cause") or "", "").replace("{hero}", CFG.get("protagonist") or "the hero")
+    bits = [b for b in (s.get("link"), who) if b]
+    return " · " + ", ".join(bits) if bits else ""
+
+
 def status_lines(x: dict) -> list[str]:
     """Brief lines for an open item that has a status: partly fixed, or reopened by a new run."""
     st = x.get("state") or {}
@@ -670,7 +680,7 @@ def write_briefs(run: Path, analysis: dict) -> int:
             lines.append(f"Value shift **{sign(v)}** ({word}).{note}")
             for s in scenes:
                 lines.append(f"- {sign(s.get('shift') or 0)} {s.get('value', '')}: {s.get('turn', '')}"
-                             + (f" (L{s['line']})" if s.get("line") else ""))
+                             + (f" (L{s['line']})" if s.get("line") else "") + turn_tag(s))
             lines.append("")
         lines += [f"This analysis describes `{c['file']}` as of git `{meta.get('git', '')}`. If the chapter changed since, check before acting on them.", ""]
 
