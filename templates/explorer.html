@@ -264,6 +264,8 @@ p.hint.explain { margin: 0 0 2px; }
 .kicker { font: 500 11px/1 var(--font-mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
 .x { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; width: 28px; height: 28px; font-size: 17px; line-height: 1; flex: none; color: var(--muted); }
 .x:hover { color: var(--fg); border-color: var(--muted); }
+.back { font: 500 12px var(--font-body); border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 3px 10px; margin-right: 12px; vertical-align: middle; color: var(--fg); }
+.back:hover { border-color: var(--muted); }
 .lede { font-size: 16px; line-height: 1.5; margin: 0; max-width: 64ch; }
 .lede.sm { font-size: 14.5px; }
 .sugg { margin: 0; max-width: 64ch; }
@@ -486,6 +488,7 @@ p.hint.explain { margin: 0 0 2px; }
   }
   $("tabs").addEventListener("click", e => {
     const b = e.target.closest("[data-view]"); if (!b) return;
+    state.back = null;
     go(b.dataset.view);
   });
 
@@ -523,10 +526,10 @@ p.hint.explain { margin: 0 0 2px; }
         <span><i class="sw" style="background:var(--muted)"></i>High finding</span>
         <span><i class="sw" style="background:var(--muted);opacity:.4"></i>Medium finding</span>
         <span><i class="sw" style="background:var(--heat1)"></i><i class="sw" style="background:var(--heat2)"></i><i class="sw" style="background:var(--heat3)"></i><i class="sw" style="background:var(--heat4)"></i>Overlap: 1, 2, 3, 4+ frameworks</span>
-        <span>Click a lane name to turn a framework off.</span>`;
+        <span>Click a lane name to open that framework. Turn frameworks on and off in Explore overlap.</span>`;
     } else {
       const f = FWK[state.view];
-      $("stage-title").innerHTML = `<span class="dot" style="background:${col(f)};margin-right:8px"></span>${esc(f.name)}${f.lens ? ` <span class="muted" style="font-weight:500">· ${esc(f.lens)}</span>` : ""}`;
+      $("stage-title").innerHTML = `${state.back ? `<button class="back" data-back>← Back to All frameworks</button>` : ""}<span class="dot" style="background:${col(f)};margin-right:8px"></span>${esc(f.name)}${f.lens ? ` <span class="muted" style="font-weight:500">· ${esc(f.lens)}</span>` : ""}`;
       $("controls").innerHTML = findingFilter() + flowControls();
       $("legend").innerHTML = `
         <span><svg width="12" height="12"><path d="M6 1 11 6 6 11 1 6Z" fill="${col(f)}"/></svg>On track</span>
@@ -710,9 +713,9 @@ p.hint.explain { margin: 0 0 2px; }
       if (row.kind === "fwlane") {
         const f = row.f, off = state.hidden.has(f.key);
         parts.push(`<line x1="0" x2="${GUT + plotW}" y1="${row.y}" y2="${row.y}" stroke="var(--line)" stroke-width=".6"/>`);
-        parts.push(`<g class="lane-label" data-toggle="${esc(f.key)}" opacity="${off ? .4 : 1}"><rect x="0" y="${row.y}" width="${GUT - 6}" height="${row.h}" fill="transparent"/>
+        parts.push(`<g class="lane-label" data-open-fw="${esc(f.key)}" opacity="${off ? .4 : 1}"><rect x="0" y="${row.y}" width="${GUT - 6}" height="${row.h}" fill="transparent"/>
           <circle cx="12" cy="${row.y + 15}" r="5" fill="${off ? "none" : col(f)}" stroke="${col(f)}" stroke-width="1.5"/>
-          <text x="24" y="${row.y + 19}" font-size="12" font-weight="500" ${off ? 'text-decoration="line-through"' : ""}>${esc(f.name.length > 18 ? f.name.slice(0, 17).trim() + "…" : f.name)}<title>${esc(f.name)}</title></text></g>`);
+          <text x="24" y="${row.y + 19}" font-size="12" font-weight="500" ${off ? 'text-decoration="line-through"' : ""}>${esc(f.name.length > 18 ? f.name.slice(0, 17).trim() + "…" : f.name)}<title>Open ${esc(f.name)}</title></text></g>`);
         if (off) return;
         row.items.forEach((it, k) => {
           const ly = row.y + 7 + row.pack.lane[k] * 13;
@@ -862,8 +865,8 @@ p.hint.explain { margin: 0 0 2px; }
   });
   svg.addEventListener("mouseleave", () => { tip.hidden = true; const hc = svg.querySelector("#hover-col"); if (hc) hc.setAttribute("width", 0); });
   svg.addEventListener("click", e => {
-    const tg = e.target.closest("[data-toggle]");
-    if (tg) { toggleFw(tg.dataset.toggle); return; }
+    const of = e.target.closest("[data-open-fw]");
+    if (of) { openFw(of.dataset.openFw); return; }
     const sp = e.target.closest("[data-span]");
     if (sp) { select(spanSel(sp.dataset.span)); return; }
     const fd = e.target.closest("[data-finding]");
@@ -871,6 +874,22 @@ p.hint.explain { margin: 0 0 2px; }
     const id = chapterAt(svgX(e));
     if (id) select({ t: "chapter", id });
   });
+  // A lane name on All frameworks opens that framework with no chapter selected, so its verdict shows.
+  function openFw(k) {
+    if (!FWK[k]) return;
+    state.back = { view: state.view, sel: state.sel, stripCh: state.stripCh, y: window.scrollY };
+    state.view = k; state.stripCh = null;
+    setSel(defaultSel()); renderAll();
+    try { if (location.protocol !== "data:" && location.protocol !== "file:") history.replaceState(null, "", "#" + k); } catch (_) {}
+  }
+  function goBack() {
+    const b = state.back; if (!b) return;
+    state.back = null; state.view = b.view; state.stripCh = b.stripCh;
+    setSel(b.sel); renderAll();
+    try { if (location.protocol !== "data:" && location.protocol !== "file:") history.replaceState(null, "", b.view === "all" ? location.pathname + location.search : "#" + b.view); } catch (_) {}
+    requestAnimationFrame(() => window.scrollTo(0, b.y));
+  }
+  document.addEventListener("click", e => { if (e.target.closest("[data-back]")) goBack(); });
   function toggleFw(k) { state.hidden.has(k) ? state.hidden.delete(k) : state.hidden.add(k); drawMap(); renderSide(true); renderFocus(); }
 
   const spanSel = key => { const [fw, i] = key.split(":"); return { t: "span", fw, i: +i, key }; };
